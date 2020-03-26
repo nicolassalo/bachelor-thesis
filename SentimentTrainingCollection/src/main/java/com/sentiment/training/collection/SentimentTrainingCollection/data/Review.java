@@ -21,5 +21,13 @@ public class Review {
     }
 
     public Review() {}
+
+    public int getRating() {
+        return rating;
+    }
+
+    public String getReviewText() {
+        return reviewText;
+    }
 }
 

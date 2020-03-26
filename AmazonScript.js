@@ -37,13 +37,18 @@
 
             ratingElement.parent().parent().append("<a class='a-link-normal use'>Use</a>");
 
-            $(this).find("a.use").click(function() {
+            var useElement = $(this).find("a.use");
+            function removeElement() {
+                useElement.html("");
+            }
+            useElement.click(function() {
                 $.ajax({
                     method: "POST",
                     url: "http://localhost:8080/api/reviews",
                     data: JSON.stringify(data),
                     success: function(response) {
                         console.log("response", response);
+                        removeElement();
                     },
                     contentType: "application/json;charset=utf-8"
                 });
