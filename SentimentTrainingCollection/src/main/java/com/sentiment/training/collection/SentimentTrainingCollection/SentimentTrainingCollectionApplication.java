@@ -23,10 +23,7 @@ public class SentimentTrainingCollectionApplication {
 
 	@EventListener(ApplicationReadyEvent.class)
 	public void initialize() {
-		List<Review> reviews = reviewRepository.findAll();
-		for (Review review : reviews) {
-			System.out.println(review.getRating() + "\t" + review.getReviewText());
-		}
+		// TODO: init sentimentanalysis singleton here
 	}
 
 
