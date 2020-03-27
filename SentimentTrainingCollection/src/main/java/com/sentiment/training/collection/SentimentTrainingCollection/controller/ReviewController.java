@@ -51,17 +51,7 @@ public class ReviewController {
 
     @PostMapping("/reviews/calcRating")
     public ResponseEntity<?> calcRating(@RequestParam String text) {
-        System.out.println(text);
-
-        List<Review> reviews = reviewRepository.findAll();
-        List<String> trainingData = new LinkedList<>();
-        for (Review review : reviews) {
-            trainingData.add(review.getRating() + "\t" + review.getReviewText() + "\n");
-        }
-
-        SentimentAnalysis analysis = new SentimentAnalysis();
-        analysis.trainModel(trainingData);
-        int rating = analysis.classifyNewTweet(text);
+        int rating = SentimentAnalysis.getInstance().classifyNewTweet(text);
         return new ResponseEntity<>(new ResponseMessage("Rating should be " + rating), HttpStatus.OK);
     }
 

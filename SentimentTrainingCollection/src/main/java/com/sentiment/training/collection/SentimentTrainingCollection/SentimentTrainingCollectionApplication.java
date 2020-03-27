@@ -8,6 +8,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.event.EventListener;
 
+import java.util.LinkedList;
 import java.util.List;
 
 @SpringBootApplication
@@ -23,7 +24,13 @@ public class SentimentTrainingCollectionApplication {
 
 	@EventListener(ApplicationReadyEvent.class)
 	public void initialize() {
-		// TODO: init sentimentanalysis singleton here
+		List<Review> reviews = reviewRepository.findAll();
+		List<String> trainingData = new LinkedList<>();
+		for (Review review : reviews) {
+			trainingData.add(review.getRating() + "\t" + review.getReviewText() + "\n");
+		}
+
+		SentimentAnalysis.getInstance().trainModel(trainingData);
 	}
 
 
