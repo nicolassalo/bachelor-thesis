@@ -21,17 +21,4 @@ public class SentimentTrainingCollectionApplication {
 		SpringApplication.run(SentimentTrainingCollectionApplication.class, args);
 
 	}
-
-	@EventListener(ApplicationReadyEvent.class)
-	public void initialize() {
-		List<Review> reviews = reviewRepository.findAll();
-		List<String> trainingData = new LinkedList<>();
-		for (Review review : reviews) {
-			trainingData.add(review.getRating() + "\t" + review.getReviewText() + "\n");
-		}
-
-		SentimentAnalysis.getInstance().trainModel(trainingData);
-	}
-
-
 }

@@ -7,6 +7,8 @@ import com.sentiment.training.collection.SentimentTrainingCollection.model.Respo
 import com.sentiment.training.collection.SentimentTrainingCollection.model.ReviewModel;
 import org.apache.commons.io.IOUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.context.event.ApplicationReadyEvent;
+import org.springframework.context.event.EventListener;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -46,6 +48,7 @@ public class ReviewController {
             return new ResponseEntity<>(new ResponseMessage("Text is too long!"), HttpStatus.BAD_REQUEST);
         }
         reviewRepository.save(new Review(review.getRating(), editReviewText(review)));
+        trainSentimentModel();
         return new ResponseEntity<>(new ResponseMessage("Review saved!"), HttpStatus.OK);
     }
 
@@ -66,5 +69,20 @@ public class ReviewController {
                 .replaceAll("\\;", " ; ");
 
         return editedString;
+    }
+
+    @EventListener(ApplicationReadyEvent.class)
+    public void initialize() {
+        trainSentimentModel();
+    }
+
+    private void trainSentimentModel() {
+        List<Review> reviews = reviewRepository.findAll();
+        List<String> trainingData = new LinkedList<>();
+        for (Review review : reviews) {
+            trainingData.add(review.getRating() + "\t" + review.getReviewText() + "\n");
+        }
+
+        SentimentAnalysis.getInstance().trainModel(trainingData);
     }
 }
