@@ -50,6 +50,9 @@
                         console.log("response", response);
                         removeElement();
                     },
+                    error: function(error) {
+                        alert(error.responseJSON.message);
+                    },
                     contentType: "application/json;charset=utf-8"
                 });
             });

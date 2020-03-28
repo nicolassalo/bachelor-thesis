@@ -25,6 +25,8 @@ public class SentimentAnalysis {
         return instance;
     }
 
+    private SentimentAnalysis() {}
+
     DoccatModel model;
 
     @Autowired
@@ -32,22 +34,22 @@ public class SentimentAnalysis {
 
 
 
-    public void trainModel(List<String> trainingData) {
+    public void trainModel(String lang, List<String> trainingData) {
         InputStream dataIn = null;
         try {
-            BufferedWriter writer = new BufferedWriter(new FileWriter("sentiment-training.txt"));
+            BufferedWriter writer = new BufferedWriter(new FileWriter("sentiment-training-" + lang + ".txt"));
             for (String string : trainingData) {
                 writer.write(string);
             }
             writer.close();
 
-            dataIn = new FileInputStream("sentiment-training.txt");
+            dataIn = new FileInputStream("sentiment-training-" + lang + ".txt");
             ObjectStream lineStream = new PlainTextByLineStream(dataIn, "UTF-8");
             ObjectStream sampleStream = new DocumentSampleStream(lineStream);
             // Specifies the minimum number of times a feature must be seen
             int cutoff = 1;
             int trainingIterations = 30;
-            model = DocumentCategorizerME.train("de", sampleStream, cutoff, trainingIterations);
+            model = DocumentCategorizerME.train(lang, sampleStream, cutoff, trainingIterations);
         } catch (IOException e) {
             e.printStackTrace();
         } finally {

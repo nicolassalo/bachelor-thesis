@@ -15,9 +15,12 @@ public class Review {
     @Column( length = 10000 )
     private String reviewText;
 
-    public Review(int rating, String reviewText) {
+    private String lang;
+
+    public Review(int rating, String reviewText, String lang) {
         this.rating = rating;
         this.reviewText = reviewText;
+        this.lang = lang;
     }
 
     public Review() {}
@@ -28,6 +31,14 @@ public class Review {
 
     public String getReviewText() {
         return reviewText;
+    }
+
+    public String getLang() {
+        return lang;
+    }
+
+    public void setLang(String lang) {
+        this.lang = lang;
     }
 }
 

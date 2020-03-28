@@ -3,8 +3,10 @@ package com.sentiment.training.collection.SentimentTrainingCollection.controller
 import com.sentiment.training.collection.SentimentTrainingCollection.SentimentAnalysis;
 import com.sentiment.training.collection.SentimentTrainingCollection.data.Review;
 import com.sentiment.training.collection.SentimentTrainingCollection.data.ReviewRepository;
+import com.sentiment.training.collection.SentimentTrainingCollection.model.Language;
 import com.sentiment.training.collection.SentimentTrainingCollection.model.ResponseMessage;
 import com.sentiment.training.collection.SentimentTrainingCollection.model.ReviewModel;
+import com.sentiment.training.collection.SentimentTrainingCollection.model.TextRating;
 import org.apache.commons.io.IOUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
@@ -12,6 +14,7 @@ import org.springframework.context.event.EventListener;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.client.RestTemplate;
 
 import javax.validation.Valid;
 import java.io.FileNotFoundException;
@@ -47,15 +50,31 @@ public class ReviewController {
 
             return new ResponseEntity<>(new ResponseMessage("Text is too long!"), HttpStatus.BAD_REQUEST);
         }
-        reviewRepository.save(new Review(review.getRating(), editReviewText(review)));
+        Language language = getLanguage(review.getReviewText());
+        if (language.getConfidence() < 0.95) {
+            return new ResponseEntity<>(new ResponseMessage("Language might be " + language.getLang() + ", but only " + Math.round(language.getConfidence() * 100) + " % confident!"), HttpStatus.BAD_REQUEST);
+        }
+        reviewRepository.save(new Review(review.getRating(), editReviewText(review), language.getLang()));
         trainSentimentModel();
         return new ResponseEntity<>(new ResponseMessage("Review saved!"), HttpStatus.OK);
     }
 
     @PostMapping("/reviews/calcRating")
     public ResponseEntity<?> calcRating(@RequestParam String text) {
-        int rating = SentimentAnalysis.getInstance().classifyNewTweet(text);
-        return new ResponseEntity<>(new ResponseMessage("Rating should be " + rating), HttpStatus.OK);
+        Language language = getLanguage(text);
+        if (language.getLang().equals("de")) {
+            int rating = SentimentAnalysis.getInstance().classifyNewTweet(text);
+            return new ResponseEntity<>(new TextRating(rating, language.getConfidence()), HttpStatus.OK);
+        }
+        return new ResponseEntity<>(new ResponseMessage("Language currently not supported. Language found: " + language.getLang() + " with a confidence of " + language.getConfidence() * 100 + " %."), HttpStatus.BAD_REQUEST);
+    }
+
+    private Language getLanguage(String text) {
+        final String uri = "http://localhost:8081/api/language?text=" + text;
+
+        RestTemplate restTemplate = new RestTemplate();
+        Language[] result = restTemplate.getForObject(uri, Language[].class);
+        return result[0];
     }
 
     private String editReviewText(ReviewModel reviewModel) {
@@ -77,12 +96,12 @@ public class ReviewController {
     }
 
     private void trainSentimentModel() {
-        List<Review> reviews = reviewRepository.findAll();
+        List<Review> reviews = reviewRepository.findByLang("de");
         List<String> trainingData = new LinkedList<>();
         for (Review review : reviews) {
             trainingData.add(review.getRating() + "\t" + review.getReviewText() + "\n");
         }
 
-        SentimentAnalysis.getInstance().trainModel(trainingData);
+        SentimentAnalysis.getInstance().trainModel("de", trainingData);
     }
 }
