@@ -6,7 +6,6 @@ import opennlp.tools.util.*;
 import java.io.File;
 import java.io.IOException;
 
-// TODO: Trainingspart in eigene Methode auslagern und singleton machen
 public class LanguageDetector {
 
     private opennlp.tools.langdetect.LanguageDetector languageDetector;

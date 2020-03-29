@@ -1,7 +1,6 @@
-package com.sentiment.training.collection.SentimentTrainingCollection;
+package com.SentimentAnalysis;
 
-import com.sentiment.training.collection.SentimentTrainingCollection.data.Review;
-import com.sentiment.training.collection.SentimentTrainingCollection.data.ReviewRepository;
+import com.SentimentAnalysis.data.ReviewRepository;
 import opennlp.tools.doccat.DoccatModel;
 import opennlp.tools.doccat.DocumentCategorizerME;
 import opennlp.tools.doccat.DocumentSampleStream;
@@ -10,7 +9,6 @@ import opennlp.tools.util.PlainTextByLineStream;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import java.io.*;
-import java.util.LinkedList;
 import java.util.List;
 
 

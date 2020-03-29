@@ -1,4 +1,4 @@
-package com.sentiment.training.collection.SentimentTrainingCollection.model;
+package com.SentimentAnalysis.model;
 
 public class ResponseMessage {
 

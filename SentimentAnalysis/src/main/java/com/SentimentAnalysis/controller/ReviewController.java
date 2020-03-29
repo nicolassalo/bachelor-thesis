@@ -1,13 +1,12 @@
-package com.sentiment.training.collection.SentimentTrainingCollection.controller;
+package com.SentimentAnalysis.controller;
 
-import com.sentiment.training.collection.SentimentTrainingCollection.SentimentAnalysis;
-import com.sentiment.training.collection.SentimentTrainingCollection.data.Review;
-import com.sentiment.training.collection.SentimentTrainingCollection.data.ReviewRepository;
-import com.sentiment.training.collection.SentimentTrainingCollection.model.Language;
-import com.sentiment.training.collection.SentimentTrainingCollection.model.ResponseMessage;
-import com.sentiment.training.collection.SentimentTrainingCollection.model.ReviewModel;
-import com.sentiment.training.collection.SentimentTrainingCollection.model.TextRating;
-import org.apache.commons.io.IOUtils;
+import com.SentimentAnalysis.SentimentAnalysis;
+import com.SentimentAnalysis.data.Review;
+import com.SentimentAnalysis.data.ReviewRepository;
+import com.SentimentAnalysis.model.Language;
+import com.SentimentAnalysis.model.ResponseMessage;
+import com.SentimentAnalysis.model.ReviewModel;
+import com.SentimentAnalysis.model.TextRating;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.event.EventListener;
@@ -17,10 +16,6 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.client.RestTemplate;
 
 import javax.validation.Valid;
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.PrintWriter;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -63,10 +58,13 @@ public class ReviewController {
     public ResponseEntity<?> calcRating(@RequestParam String text) {
         Language language = getLanguage(text);
         if (language.getLang().equals("de")) {
+            if (language.getConfidence() < 0.95) {
+                return new ResponseEntity<>(new ResponseMessage("Not sure that this is really german. Only" + " with a confidence of " + Math.round(language.getConfidence() * 100) + " %."), HttpStatus.BAD_REQUEST);
+            }
             int rating = SentimentAnalysis.getInstance().classifyNewTweet(text);
             return new ResponseEntity<>(new TextRating(rating, language.getConfidence()), HttpStatus.OK);
         }
-        return new ResponseEntity<>(new ResponseMessage("Language currently not supported. Language found: " + language.getLang() + " with a confidence of " + language.getConfidence() * 100 + " %."), HttpStatus.BAD_REQUEST);
+        return new ResponseEntity<>(new ResponseMessage("Language currently not supported. Language found: " + language.getLang() + " with a confidence of " + Math.round(language.getConfidence() * 100) + " %."), HttpStatus.BAD_REQUEST);
     }
 
     private Language getLanguage(String text) {

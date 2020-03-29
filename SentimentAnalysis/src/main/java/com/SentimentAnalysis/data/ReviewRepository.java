@@ -1,4 +1,4 @@
-package com.sentiment.training.collection.SentimentTrainingCollection.data;
+package com.SentimentAnalysis.data;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 
