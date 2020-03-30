@@ -17,10 +17,13 @@ public class Review {
 
     private String lang;
 
-    public Review(int rating, String reviewText, String lang) {
+    private String password;
+
+    public Review(int rating, String reviewText, String lang, String password) {
         this.rating = rating;
         this.reviewText = reviewText;
         this.lang = lang;
+        this.password = password;
     }
 
     public Review() {}
@@ -39,6 +42,10 @@ public class Review {
 
     public void setLang(String lang) {
         this.lang = lang;
+    }
+
+    public String getPassword() {
+        return password;
     }
 }
 

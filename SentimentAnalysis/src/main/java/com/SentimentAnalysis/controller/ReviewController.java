@@ -48,7 +48,7 @@ public class ReviewController {
             if (language.getConfidence() < 0.95) {
                 return new ResponseEntity<>(new ResponseMessage("Language might be " + language.getLang() + ", but only " + Math.round(language.getConfidence() * 100) + " % confident!"), HttpStatus.BAD_REQUEST);
             }
-            reviewRepository.save(new Review(review.getRating(), editReviewText(review), language.getLang()));
+            reviewRepository.save(new Review(review.getRating(), editReviewText(review), language.getLang(), password));
             trainSentimentModel();
             return new ResponseEntity<>(new ResponseMessage("Review saved!"), HttpStatus.OK);
         } else {
