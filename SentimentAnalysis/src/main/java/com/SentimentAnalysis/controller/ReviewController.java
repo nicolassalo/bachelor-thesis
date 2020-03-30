@@ -1,6 +1,7 @@
 package com.SentimentAnalysis.controller;
 
 import com.SentimentAnalysis.SentimentAnalysis;
+import com.SentimentAnalysis.data.PasswordRepository;
 import com.SentimentAnalysis.data.Review;
 import com.SentimentAnalysis.data.ReviewRepository;
 import com.SentimentAnalysis.model.Language;
@@ -24,14 +25,11 @@ import java.util.List;
 @RequestMapping("/api")
 public class ReviewController {
 
-
-
-    // TODO: Add sentiment analysis to this spring boot app und keep language detection as separate microservice?
-
-
-
     @Autowired
     ReviewRepository reviewRepository;
+
+    @Autowired
+    PasswordRepository passwordRepository;
 
     /**
      * Saves the sent review in the collection
@@ -39,21 +37,26 @@ public class ReviewController {
      * @param review A review of type @{@link ReviewModel} to be saved in the collection
      * @return HttpStatus.OK if the review was saved
      */
-    @PostMapping("/reviews")
-    public ResponseEntity<?> saveReview(@Valid @RequestBody ReviewModel review) {
-        if (review.getReviewText().length() > 10000) {
+    @PostMapping("/reviews/{password}")
+    public ResponseEntity<?> saveReview(@Valid @RequestBody ReviewModel review, @PathVariable String password) {
+        if (passwordRepository.existsByPassword(password)) {
+            if (review.getReviewText().length() > 10000) {
 
-            return new ResponseEntity<>(new ResponseMessage("Text is too long!"), HttpStatus.BAD_REQUEST);
+                return new ResponseEntity<>(new ResponseMessage("Text is too long!"), HttpStatus.BAD_REQUEST);
+            }
+            Language language = getLanguage(review.getReviewText());
+            if (language.getConfidence() < 0.95) {
+                return new ResponseEntity<>(new ResponseMessage("Language might be " + language.getLang() + ", but only " + Math.round(language.getConfidence() * 100) + " % confident!"), HttpStatus.BAD_REQUEST);
+            }
+            reviewRepository.save(new Review(review.getRating(), editReviewText(review), language.getLang()));
+            trainSentimentModel();
+            return new ResponseEntity<>(new ResponseMessage("Review saved!"), HttpStatus.OK);
+        } else {
+            return new ResponseEntity<>(new ResponseMessage("Permission denied!"), HttpStatus.FORBIDDEN);
         }
-        Language language = getLanguage(review.getReviewText());
-        if (language.getConfidence() < 0.95) {
-            return new ResponseEntity<>(new ResponseMessage("Language might be " + language.getLang() + ", but only " + Math.round(language.getConfidence() * 100) + " % confident!"), HttpStatus.BAD_REQUEST);
-        }
-        reviewRepository.save(new Review(review.getRating(), editReviewText(review), language.getLang()));
-        trainSentimentModel();
-        return new ResponseEntity<>(new ResponseMessage("Review saved!"), HttpStatus.OK);
     }
 
+    // TODO: Use @RequestBody instead of @RequestParam. Throws error if URL is too long
     @PostMapping("/reviews/calcRating")
     public ResponseEntity<?> calcRating(@RequestParam String text) {
         Language language = getLanguage(text);
