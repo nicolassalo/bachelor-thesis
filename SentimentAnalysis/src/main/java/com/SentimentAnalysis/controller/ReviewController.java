@@ -56,6 +56,27 @@ public class ReviewController {
         }
     }
 
+    /**
+     * Deletes the sent review from the collection
+     *
+     * Should be of type @DeleteMapping but simplifies frontend code this way
+     *
+     * @param review A review of type @{@link ReviewModel} to be saved in the collection
+     * @return HttpStatus.OK if the review was deleted
+     */
+    @PostMapping("/delete/reviews/{password}")
+    public ResponseEntity<?> deleteReview(@Valid @RequestBody ReviewModel review, @PathVariable String password) {
+        if (passwordRepository.existsByPassword(password)) {
+            long count = reviewRepository.deleteByReviewTextAndRatingAndPassword(review.getReviewText(), review.getRating(), password);
+            if (count > 0) {
+                return new ResponseEntity<>(new ResponseMessage("Review deleted!"), HttpStatus.OK);
+            }
+            return new ResponseEntity<>(new ResponseMessage("Review not found!"), HttpStatus.NOT_FOUND);
+        } else {
+            return new ResponseEntity<>(new ResponseMessage("Permission denied!"), HttpStatus.FORBIDDEN);
+        }
+    }
+
     // TODO: Use @RequestBody instead of @RequestParam. Throws error if URL is too long
     @PostMapping("/reviews/calcRating")
     public ResponseEntity<?> calcRating(@RequestParam String text) {

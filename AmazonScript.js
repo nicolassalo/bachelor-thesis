@@ -12,8 +12,8 @@
 (function() {
     'use strict';
 
-    //var baseUrl = "http://161.35.24.188";
-    var baseUrl = "http://localhost";
+    var baseUrl = "https://api.ishift.de";
+    //var baseUrl = "https://localhost";
 
     scan();
 
@@ -38,22 +38,53 @@
                 reviewText: reviewText
             };
 
-            ratingElement.parent().parent().append("<a class='a-link-normal use'>Use</a> <a class='a-link-normal check'>Check</a>");
+            ratingElement.parent().parent().append("<a class='a-link-normal use do-use'>Use</a> <a class='a-link-normal check'>Check</a>");
 
             var useElement = $(this).find("a.use");
-            function removeElement() {
-                useElement.html("");
+            function changeUseButton() {
+                if (useElement.hasClass("do-use")) {
+                    useElement.html("Undo");
+                    useElement.removeClass("do-use").addClass("undo-use");
+                } else {
+                    useElement.html("Use");
+                    useElement.removeClass("undo-use").addClass("do-use");
+                }
             }
+            useElement.click(function() {
+                var password = getPassword();
+                var url = useElement.hasClass("do-use") ? baseUrl + ":8443/api/reviews/" + password : baseUrl + ":8443/api/delete/reviews/" + password
+                if (password) {
+                    $.ajax({
+                        method: "POST",
+                        url: url,
+                        data: JSON.stringify(data),
+                        success: function(response) {
+                            console.log("response", response);
+                            changeUseButton();
+                        },
+                        error: function(error) {
+                            alert(error.responseJSON.message);
+                            if (error.status == 403) {
+                                localStorage.removeItem("SentimentAnalysisAPIPassword");
+                            }
+                        },
+                        contentType: "application/json;charset=utf-8"
+                    });
+                } else {
+                    alert("Permission denied");
+                }
+            });
+
             useElement.click(function() {
                 var password = getPassword();
                 if (password) {
                     $.ajax({
                         method: "POST",
-                        url: baseUrl + ":8080/api/reviews/" + password,
+                        url: baseUrl + ":8443/api/reviews/" + password,
                         data: JSON.stringify(data),
                         success: function(response) {
                             console.log("response", response);
-                            removeElement();
+                            changeUseButton();
                         },
                         error: function(error) {
                             alert(error.responseJSON.message);
@@ -72,7 +103,7 @@
             checkElement.click(function() {
                 $.ajax({
                     method: "POST",
-                    url: baseUrl + ":8080/api/reviews/calcRating?text=" + reviewText,
+                    url: baseUrl + ":8443/api/reviews/calcRating?text=" + reviewText,
                     //data: JSON.stringify(data),
                     success: function (response) {
                         alert("Rating should be " + response.rating);
