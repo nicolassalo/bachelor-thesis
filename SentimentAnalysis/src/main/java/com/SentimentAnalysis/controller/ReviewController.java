@@ -67,7 +67,7 @@ public class ReviewController {
     @PostMapping("/delete/reviews/{password}")
     public ResponseEntity<?> deleteReview(@Valid @RequestBody ReviewModel review, @PathVariable String password) {
         if (passwordRepository.existsByPassword(password)) {
-            long count = reviewRepository.deleteByReviewTextAndRatingAndPassword(review.getReviewText(), review.getRating(), password);
+            long count = reviewRepository.deleteByReviewTextAndRatingAndPassword(editReviewText(review), review.getRating(), password);
             if (count > 0) {
                 return new ResponseEntity<>(new ResponseMessage("Review deleted!"), HttpStatus.OK);
             }

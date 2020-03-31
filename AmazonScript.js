@@ -75,30 +75,6 @@
                 }
             });
 
-            useElement.click(function() {
-                var password = getPassword();
-                if (password) {
-                    $.ajax({
-                        method: "POST",
-                        url: baseUrl + ":8443/api/reviews/" + password,
-                        data: JSON.stringify(data),
-                        success: function(response) {
-                            console.log("response", response);
-                            changeUseButton();
-                        },
-                        error: function(error) {
-                            alert(error.responseJSON.message);
-                            if (error.status == 403) {
-                                localStorage.removeItem("SentimentAnalysisAPIPassword");
-                            }
-                        },
-                        contentType: "application/json;charset=utf-8"
-                    });
-                } else {
-                    alert("Permission denied");
-                }
-            });
-
             var checkElement = $(this).find("a.check");
             checkElement.click(function() {
                 $.ajax({
