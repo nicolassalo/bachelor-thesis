@@ -16,6 +16,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.client.RestTemplate;
 
+import javax.transaction.Transactional;
 import javax.validation.Valid;
 import java.util.LinkedList;
 import java.util.List;
@@ -64,12 +65,13 @@ public class ReviewController {
      * @param review A review of type @{@link ReviewModel} to be saved in the collection
      * @return HttpStatus.OK if the review was deleted
      */
+    @Transactional
     @PostMapping("/delete/reviews/{password}")
     public ResponseEntity<?> deleteReview(@Valid @RequestBody ReviewModel review, @PathVariable String password) {
         if (passwordRepository.existsByPassword(password)) {
             long count = reviewRepository.deleteByReviewTextAndRatingAndPassword(editReviewText(review), review.getRating(), password);
             if (count > 0) {
-                return new ResponseEntity<>(new ResponseMessage("Review deleted!"), HttpStatus.OK);
+                return new ResponseEntity<>(new ResponseMessage("Deleted " + count + " reviews!"), HttpStatus.OK);
             }
             return new ResponseEntity<>(new ResponseMessage("Review not found!"), HttpStatus.NOT_FOUND);
         } else {
