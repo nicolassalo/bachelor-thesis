@@ -71,6 +71,7 @@ public class ReviewController {
         if (passwordRepository.existsByPassword(password)) {
             long count = reviewRepository.deleteByReviewTextAndRatingAndPassword(editReviewText(review), review.getRating(), password);
             if (count > 0) {
+                trainSentimentModel();
                 return new ResponseEntity<>(new ResponseMessage("Deleted " + count + " reviews!"), HttpStatus.OK);
             }
             return new ResponseEntity<>(new ResponseMessage("Review not found!"), HttpStatus.NOT_FOUND);
