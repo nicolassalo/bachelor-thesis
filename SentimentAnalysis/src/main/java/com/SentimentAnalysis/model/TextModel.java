@@ -8,6 +8,8 @@ public class TextModel {
         this.text = text;
     }
 
+    public TextModel() {}
+
     public String getText() {
         return text;
     }
