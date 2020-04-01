@@ -176,7 +176,7 @@ To make sure it worked, go to amazon.de and open the developer console. It shoul
 * [Maven](https://maven.apache.org/) - Dependency Management
 * [PostgreSQL](https://www.postgresql.org/) - Database Management
 
-## Authors
+## Author
 
-* **Nicolas Salomon** - [Github](https://github.com/nicolassalo/)
+**Nicolas Salomon** - [Github](https://github.com/nicolassalo/)
 
