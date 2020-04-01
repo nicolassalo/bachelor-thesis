@@ -159,7 +159,16 @@ The API endpoints for adding and removing review training data is **password pro
 
 ## Deployment
 
+### Spring-boot application
+
 System must have Java, PostgreSQL and Maven installed.
+
+
+### Amazon TamperMonkey script
+
+For using the [AmazonScript](https://github.com/nicolassalo/bachelor-thesis/blob/master/AmazonScript.js), you need to have [Tampermonkey](https://www.tampermonkey.net/) installed in your browser.
+In order to add the script, you have to go to the tampermonkey dashboard, open a new script, replace the default content with the Javascript of the file and press Save.
+To make sure it worked, go to amazon.de and open the developer console. It should log "Script by Nicolas Salomon is active".
 
 ## Built With
 
