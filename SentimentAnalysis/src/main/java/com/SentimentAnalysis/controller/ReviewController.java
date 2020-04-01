@@ -8,15 +8,19 @@ import com.SentimentAnalysis.model.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.event.EventListener;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.client.RestTemplate;
 
 import javax.transaction.Transactional;
 import javax.validation.Valid;
+import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 
 @CrossOrigin(maxAge = 3600)
 @RestController
@@ -92,11 +96,16 @@ public class ReviewController {
     }
 
     private Language getLanguage(String text) {
-        final String uri = "http://localhost:8081/api/language?text=" + text;
+        final String uri = "http://localhost:8081/languageDetection/detect";
 
         RestTemplate restTemplate = new RestTemplate();
-        Language[] result = restTemplate.getForObject(uri, Language[].class);
-        return result[0];
+        // request body parameters
+        Map<String, String> map = new HashMap<>();
+        map.put("text", text);
+
+        ResponseEntity<Language[]> response = restTemplate.postForEntity(uri, map, Language[].class);
+        Language[] languages = response.getBody();
+        return languages[0];
     }
 
     private String editReviewText(ReviewModel reviewModel) {

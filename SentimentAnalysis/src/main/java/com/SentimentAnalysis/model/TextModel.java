@@ -1,4 +1,4 @@
-package com.salomon.languagedetection.model;
+package com.SentimentAnalysis.model;
 
 public class TextModel {
 
