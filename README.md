@@ -11,6 +11,7 @@ Version 1 (01. April 2020):
     * one API endpoint for adding reviews to the AI training data and
     * one API endpoint for removing accidentally added reviews from the AI training data
     * 200+ training reviews 
+* currently supporting only german reviews. Requests with reviews in another language return an error.
 
 
 ## How to use
@@ -74,11 +75,11 @@ The API endpoints for adding and removing review training data is **password pro
   });
   ``` 
 
-#### Sentiment analysis API
+#### Language detection API
 
 * **URL**
 
-  https://api.ishift.de/sentimentAnalysis/reviews/calcRating
+  http://api.ishift.de/languageDetection/detect
 
 * **Method:**
   
@@ -97,31 +98,57 @@ The API endpoints for adding and removing review training data is **password pro
   * **Code:** 200 <br />
     **Content:** 
     ```
-    {
-        rating: <1..5>, 
-        languageConfidence: <0..1>
-    }
+    [
+        {
+            "lang": "de",
+            "confidence": 0.9999760016291265
+        },
+        {
+            "lang": "en",
+            "confidence": 2.1571782002703068E-5
+        },
+        {
+            "lang": "pob",
+            "confidence": 2.426314759896866E-6
+        },
+        {
+            "lang": "spa",
+            "confidence": 2.3112546832111294E-10
+        },
+        {
+            "lang": "ita",
+            "confidence": 4.280121662280208E-11
+        },
+        {
+            "lang": "fra",
+            "confidence": 1.8423835064068247E-13
+        }
+    ]
     ```
  
 * **Error Response:**
 
-  * **Code:** 400 BAD REQUEST <br />
-    **Content:** `{message: "Language currently not supported"}`
-
-  OR
-
-  * **Code:** 400 BAD REQUEST <br />
-    **Content:** `{message: "Not sure that this is really german. Only with a confidence of 78 %."}`
+  * **Code:** 400 BAD REQUEST (empty request body) <br />
+    **Content:** 
+    ```
+    {
+        "timestamp": "2020-04-01T19:42:55.145+0000",
+        "status": 400,
+        "error": "Bad Request",
+        "message": "Required request body is missing: public opennlp.tools.langdetect.Language[] com.salomon.languagedetection.controller.LanguageDetectionController.detectLanguage(com.salomon.languagedetection.model.TextModel)",
+        "path": "/languageDetection/detect"
+    }
+    ```
 
 * **Sample Call:**
 
   ```
   $.ajax({
       method: "POST",
-      url: "https://api.ishift.de:8081/sentimentAnalysis/reviews/calcRating",
-      data: JSON.stringify({text: "Super Produkt"}),
+      url: "http://api.ishift.de:8081/languageDetection/detect",
+      data: JSON.stringify({text: "Dieser Text ist deutsch"}),
       success: function (response) {
-          alert("Rating should be " + response.rating);
+          console.log(response);
       },
       error: function (error) {
           alert(error.responseJSON.message);
@@ -130,46 +157,17 @@ The API endpoints for adding and removing review training data is **password pro
   });
   ``` 
 
-
-### And coding style tests
-
-Explain what these tests test and why
-
-```
-Give an example
-```
-
 ## Deployment
 
-Add additional notes about how to deploy this on a live system
+System must have Java, PostgreSQL and Maven installed.
 
 ## Built With
 
-* [Dropwizard](http://www.dropwizard.io/1.0.2/docs/) - The web framework used
+* [Spring Boot](https://spring.io/projects/spring-boot) - The REST API framework used
 * [Maven](https://maven.apache.org/) - Dependency Management
-* [ROME](https://rometools.github.io/rome/) - Used to generate RSS Feeds
-
-## Contributing
-
-Please read [CONTRIBUTING.md](https://gist.github.com/PurpleBooth/b24679402957c63ec426) for details on our code of conduct, and the process for submitting pull requests to us.
-
-## Versioning
-
-We use [SemVer](http://semver.org/) for versioning. For the versions available, see the [tags on this repository](https://github.com/your/project/tags). 
+* [PostgreSQL](https://www.postgresql.org/) - Database Management
 
 ## Authors
 
-* **Billie Thompson** - *Initial work* - [PurpleBooth](https://github.com/PurpleBooth)
-
-See also the list of [contributors](https://github.com/your/project/contributors) who participated in this project.
-
-## License
-
-This project is licensed under the MIT License - see the [LICENSE.md](LICENSE.md) file for details
-
-## Acknowledgments
-
-* Hat tip to anyone whose code was used
-* Inspiration
-* etc
+* **Nicolas Salomon** - [Github](https://github.com/nicolassalo/)
 
