@@ -167,7 +167,7 @@ System must have Java, PostgreSQL and Maven installed.
 * [Maven](https://maven.apache.org/) - Dependency Management
 * [PostgreSQL](https://www.postgresql.org/) - Database Management
 
-## Authors
+## Author
 
-* **Nicolas Salomon** - [Github](https://github.com/nicolassalo/)
+**Nicolas Salomon** - [Github](https://github.com/nicolassalo/)
 
