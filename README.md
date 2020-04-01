@@ -22,60 +22,114 @@ The API endpoints for adding and removing review training data is **password pro
 
 * **URL**
 
-  https://api.ishift.de/api/reviews
+  https://api.ishift.de/sentimentAnalysis/reviews/calcRating
 
 * **Method:**
   
-  <_The request type_>
-
-  `GET` | `POST` | `DELETE` | `PUT`
+  `POST`
   
 *  **URL Params**
 
-   <_If URL params exist, specify them in accordance with name mentioned in URL section. Separate into optional and required. Document data constraints._> 
-
-   **Required:**
- 
-   `id=[integer]`
-
-   **Optional:**
- 
-   `photo_id=[alphanumeric]`
+   None 
 
 * **Data Params**
 
-  <_If making a post request, what should the body payload look like? URL Params rules apply here too._>
+  `{text: <reviewText>}`
 
 * **Success Response:**
   
-  <_What should the status code be on success and is there any returned data? This is useful when people need to to know what their callbacks should expect!_>
-
   * **Code:** 200 <br />
-    **Content:** `{ id : 12 }`
+    **Content:** 
+    ```
+    {
+        rating: <1..5>, 
+        languageConfidence: <0..1>
+    }
+    ```
  
 * **Error Response:**
 
-  <_Most endpoints will have many ways they can fail. From unauthorized access, to wrongful parameters etc. All of those should be liste d here. It might seem repetitive, but it helps prevent assumptions from being made where they should be._>
-
-  * **Code:** 401 UNAUTHORIZED <br />
-    **Content:** `{ error : "Log in" }`
+  * **Code:** 400 BAD REQUEST <br />
+    **Content:** `{message: "Language currently not supported"}`
 
   OR
 
-  * **Code:** 422 UNPROCESSABLE ENTRY <br />
-    **Content:** `{ error : "Email Invalid" }`
+  * **Code:** 400 BAD REQUEST <br />
+    **Content:** `{message: "Not sure that this is really german. Only with a confidence of 78 %."}`
 
 * **Sample Call:**
 
-  <_Just a sample call to your endpoint in a runnable format ($.ajax call or a curl request) - this makes life easier and more predictable._> 
+  ```
+  $.ajax({
+      method: "POST",
+      url: "https://api.ishift.de:8443/sentimentAnalysis/reviews/calcRating",
+      data: JSON.stringify({text: "Super Produkt"}),
+      success: function (response) {
+          alert("Rating should be " + response.rating);
+      },
+      error: function (error) {
+          alert(error.responseJSON.message);
+      },
+      contentType: "application/json;charset=utf-8"
+  });
+  ``` 
 
-* **Notes:**
+#### Sentiment analysis API
 
-  <_This is where all uncertainties, commentary, discussion etc. can go. I recommend timestamping and identifying oneself when leaving comments here._>
+* **URL**
 
-```
-Give an example
-```
+  https://api.ishift.de/sentimentAnalysis/reviews/calcRating
+
+* **Method:**
+  
+  `POST`
+  
+*  **URL Params**
+
+   None 
+
+* **Data Params**
+
+  `{text: <reviewText>}`
+
+* **Success Response:**
+  
+  * **Code:** 200 <br />
+    **Content:** 
+    ```
+    {
+        rating: <1..5>, 
+        languageConfidence: <0..1>
+    }
+    ```
+ 
+* **Error Response:**
+
+  * **Code:** 400 BAD REQUEST <br />
+    **Content:** `{message: "Language currently not supported"}`
+
+  OR
+
+  * **Code:** 400 BAD REQUEST <br />
+    **Content:** `{message: "Not sure that this is really german. Only with a confidence of 78 %."}`
+
+* **Sample Call:**
+
+  ```
+  $.ajax({
+      method: "POST",
+      url: "https://api.ishift.de:8081/sentimentAnalysis/reviews/calcRating",
+      data: JSON.stringify({text: "Super Produkt"}),
+      success: function (response) {
+          alert("Rating should be " + response.rating);
+      },
+      error: function (error) {
+          alert(error.responseJSON.message);
+      },
+      contentType: "application/json;charset=utf-8"
+  });
+  ``` 
+
 
 ### And coding style tests
 
