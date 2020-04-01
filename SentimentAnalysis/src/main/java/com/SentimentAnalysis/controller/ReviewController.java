@@ -4,10 +4,7 @@ import com.SentimentAnalysis.SentimentAnalysis;
 import com.SentimentAnalysis.data.PasswordRepository;
 import com.SentimentAnalysis.data.Review;
 import com.SentimentAnalysis.data.ReviewRepository;
-import com.SentimentAnalysis.model.Language;
-import com.SentimentAnalysis.model.ResponseMessage;
-import com.SentimentAnalysis.model.ReviewModel;
-import com.SentimentAnalysis.model.TextRating;
+import com.SentimentAnalysis.model.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.event.EventListener;
@@ -23,7 +20,7 @@ import java.util.List;
 
 @CrossOrigin(maxAge = 3600)
 @RestController
-@RequestMapping("/api")
+@RequestMapping("/sentimentAnalysis")
 public class ReviewController {
 
     @Autowired
@@ -82,13 +79,13 @@ public class ReviewController {
 
     // TODO: Use @RequestBody instead of @RequestParam. Throws error if URL is too long
     @PostMapping("/reviews/calcRating")
-    public ResponseEntity<?> calcRating(@RequestParam String text) {
-        Language language = getLanguage(text);
+    public ResponseEntity<?> calcRating(@Valid @RequestBody TextModel text) {
+        Language language = getLanguage(text.getText());
         if (language.getLang().equals("de")) {
             if (language.getConfidence() < 0.95) {
                 return new ResponseEntity<>(new ResponseMessage("Not sure that this is really german. Only" + " with a confidence of " + Math.round(language.getConfidence() * 100) + " %."), HttpStatus.BAD_REQUEST);
             }
-            int rating = SentimentAnalysis.getInstance().classifyNewTweet(text);
+            int rating = SentimentAnalysis.getInstance().classifyNewTweet(text.getText());
             return new ResponseEntity<>(new TextRating(rating, language.getConfidence()), HttpStatus.OK);
         }
         return new ResponseEntity<>(new ResponseMessage("Language currently not supported. Language found: " + language.getLang() + " with a confidence of " + Math.round(language.getConfidence() * 100) + " %."), HttpStatus.BAD_REQUEST);

@@ -13,7 +13,7 @@
     'use strict';
 
     var baseUrl = "https://api.ishift.de";
-    //var baseUrl = "https://localhost";
+    //var baseUrl = "https://localhost:8443";
 
     scan();
 
@@ -52,7 +52,7 @@
             }
             useElement.click(function() {
                 var password = getPassword();
-                var url = useElement.hasClass("do-use") ? baseUrl + ":8443/api/reviews/" + password : baseUrl + ":8443/api/delete/reviews/" + password
+                var url = useElement.hasClass("do-use") ? baseUrl + ":8443/sentimentAnalysis/reviews/" + password : baseUrl + ":8443/sentimentAnalysis/delete/reviews/" + password
                 if (password) {
                     $.ajax({
                         method: "POST",
@@ -79,8 +79,8 @@
             checkElement.click(function() {
                 $.ajax({
                     method: "POST",
-                    url: baseUrl + ":8443/api/reviews/calcRating?text=" + reviewText,
-                    //data: JSON.stringify(data),
+                    url: baseUrl + ":8443/sentimentAnalysis/reviews/calcRating",
+                    data: JSON.stringify({text: reviewText}),
                     success: function (response) {
                         alert("Rating should be " + response.rating);
                     },
