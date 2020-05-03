@@ -31,6 +31,8 @@
             var ratingElement = $(this).find("i.review-rating");
             var ratingClass = ratingElement.attr("class");
             var rating = parseInt(ratingClass.match(/(\d+)/)[0]);
+
+            // .text() removes html elements like <br>. For review structure analysis use .html()
             var reviewText = $(this).find(".review-text-content span").text();
 
             var data = {
