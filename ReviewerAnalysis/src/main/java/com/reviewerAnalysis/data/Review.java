@@ -9,7 +9,6 @@ import javax.persistence.*;
  */
 @Entity
 public class Review {
-    private static final int EXPIRATION_DEFAULT = 1000 * 60 * 60 * 24;
 
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
@@ -27,6 +26,8 @@ public class Review {
 
     private boolean hasVideo;
 
+    private boolean isPurchaseVerified;
+
     // how many reviews the product has
     private int numberProductReviews;
 
@@ -39,6 +40,7 @@ public class Review {
         average length of words and sentences
         number of question marks, exclamation marks, consecutive capital letters
         distinct words / all words
+        
      */
     @Column( length = 10000 ) // limit might vary between platforms, Amazon's limit is 5000
     private String reviewText;
@@ -47,8 +49,9 @@ public class Review {
 
     private String password;
 
-    public Review(int rating, String reviewText, String lang, String password) {
+    public Review(int rating, boolean isPurchaseVerified, String reviewText, String lang, String password) {
         this.rating = rating;
+        this.isPurchaseVerified = isPurchaseVerified;
         this.reviewText = reviewText;
         this.lang = lang;
         this.password = password;
@@ -74,6 +77,14 @@ public class Review {
 
     public String getPassword() {
         return password;
+    }
+
+    public boolean isPurchaseVerified() {
+        return isPurchaseVerified;
+    }
+
+    public void setPurchaseVerified(boolean purchaseVerified) {
+        isPurchaseVerified = purchaseVerified;
     }
 }
 

@@ -4,6 +4,7 @@ import com.reviewerAnalysis.data.PasswordRepository;
 import com.reviewerAnalysis.data.Review;
 import com.reviewerAnalysis.data.ReviewRepository;
 import com.reviewerAnalysis.model.Language;
+import com.reviewerAnalysis.model.PersonaResponse;
 import com.reviewerAnalysis.model.ResponseMessage;
 import com.reviewerAnalysis.model.ReviewModel;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -17,6 +18,8 @@ import org.springframework.web.client.RestTemplate;
 import javax.transaction.Transactional;
 import javax.validation.Valid;
 import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
 
 @CrossOrigin(maxAge = 3600)
@@ -52,7 +55,7 @@ public class ReviewController {
             if (language.getConfidence() < 0.95) {
                 return new ResponseEntity<>(new ResponseMessage("Language might be " + language.getLang() + ", but only " + Math.round(language.getConfidence() * 100) + " % confident!"), HttpStatus.BAD_REQUEST);
             }
-            reviewRepository.save(new Review(review.getRating(), editReviewText(review), language.getLang(), password));
+            reviewRepository.save(new Review(review.getRating(), review.isPurchaseVerified(), review.getReviewText(), language.getLang(), password));
             return new ResponseEntity<>(new ResponseMessage("Review saved!"), HttpStatus.OK);
         } else {
             return new ResponseEntity<>(new ResponseMessage("Permission denied!"), HttpStatus.FORBIDDEN);
@@ -71,7 +74,7 @@ public class ReviewController {
     @PostMapping("/delete/reviews/{password}")
     public ResponseEntity<?> deleteReview(@Valid @RequestBody ReviewModel review, @PathVariable String password) {
         if (passwordRepository.existsByPassword(password)) {
-            long count = reviewRepository.deleteByReviewTextAndRatingAndPassword(editReviewText(review), review.getRating(), password);
+            long count = reviewRepository.deleteByReviewTextAndRatingAndPassword(review.getReviewText(), review.getRating(), password);
             if (count > 0) {
                 return new ResponseEntity<>(new ResponseMessage("Deleted " + count + " reviews!"), HttpStatus.OK);
             }
@@ -79,6 +82,52 @@ public class ReviewController {
         } else {
             return new ResponseEntity<>(new ResponseMessage("Permission denied!"), HttpStatus.FORBIDDEN);
         }
+    }
+
+    /**
+     * Detects the persona, that is most suitable for the passed review
+     *
+     * @param review A review of type @{@link ReviewModel} to be analyzed
+     * @return a @{@link ResponseMessage} stating the detected persona
+     */
+    @PostMapping("/analyzeReview")
+    public ResponseEntity<?> analyzeSingleReview(@Valid @RequestBody ReviewModel review) {
+            if (review.getReviewText().length() > 10000) {
+                return new ResponseEntity<>(new ResponseMessage("Text is too long!"), HttpStatus.BAD_REQUEST);
+            }
+            Language language = getLanguage(review.getReviewText());
+            if (language.getConfidence() < 0.95) {
+                return new ResponseEntity<>(new ResponseMessage("Language might be " + language.getLang() + ", but only " + Math.round(language.getConfidence() * 100) + " % confident!"), HttpStatus.BAD_REQUEST);
+            }
+            // TODO: Analysis
+            return new ResponseEntity<>(new ResponseMessage("Detected Persona: TODO!"), HttpStatus.OK);
+    }
+
+    /**
+     * Detects the persona, that is most suitable for the passed list of reviews
+     *
+     * @param reviews A List of reviews of type @{@link ReviewModel} to be analyzed
+     * @return a @{@link PersonaResponse} stating the detected persona
+     */
+    @PostMapping("/")
+    public ResponseEntity<?> analyzeMultipleReviews(@Valid @RequestBody List<ReviewModel> reviews) {
+        List<ReviewModel> ignore = new LinkedList<>();
+        for (ReviewModel review : reviews) {
+            if (review.getReviewText().length() > 10000) {
+                ignore.add(review);
+            } else {
+                Language language = getLanguage(review.getReviewText());
+                if (language.getConfidence() < 0.95) {
+                    ignore.add(review);
+                }
+            }
+        }
+        // TODO: check if this works
+        reviews.removeAll(ignore);
+        // TODO: Analysis
+
+        PersonaResponse response = new PersonaResponse(ignore.size());
+        return new ResponseEntity<>(response, HttpStatus.OK);
     }
 
     private Language getLanguage(String text) {
