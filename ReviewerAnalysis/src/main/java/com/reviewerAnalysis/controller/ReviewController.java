@@ -3,10 +3,7 @@ package com.reviewerAnalysis.controller;
 import com.reviewerAnalysis.data.PasswordRepository;
 import com.reviewerAnalysis.data.Review;
 import com.reviewerAnalysis.data.ReviewRepository;
-import com.reviewerAnalysis.model.Language;
-import com.reviewerAnalysis.model.PersonaResponse;
-import com.reviewerAnalysis.model.ResponseMessage;
-import com.reviewerAnalysis.model.ReviewModel;
+import com.reviewerAnalysis.model.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.event.EventListener;
@@ -55,7 +52,7 @@ public class ReviewController {
             if (language.getConfidence() < 0.95) {
                 return new ResponseEntity<>(new ResponseMessage("Language might be " + language.getLang() + ", but only " + Math.round(language.getConfidence() * 100) + " % confident!"), HttpStatus.BAD_REQUEST);
             }
-            reviewRepository.save(new Review(review.getRating(), review.isPurchaseVerified(), review.getReviewText(), language.getLang(), password));
+            reviewRepository.save(new Review(review.getTimestamp(), review.getTimeSincePreviousReview(), review.getRating(), review.isHasPicture(), review.isHasVideo(), review.isPurchaseVerified(), review.getReviewText(), language.getLang(), password));
             return new ResponseEntity<>(new ResponseMessage("Review saved!"), HttpStatus.OK);
         } else {
             return new ResponseEntity<>(new ResponseMessage("Permission denied!"), HttpStatus.FORBIDDEN);
@@ -110,9 +107,9 @@ public class ReviewController {
      * @return a @{@link PersonaResponse} stating the detected persona
      */
     @PostMapping("/")
-    public ResponseEntity<?> analyzeMultipleReviews(@Valid @RequestBody List<ReviewModel> reviews) {
+    public ResponseEntity<?> analyzeMultipleReviews(@Valid @RequestBody ReviewModelListWrapper reviews) {
         List<ReviewModel> ignore = new LinkedList<>();
-        for (ReviewModel review : reviews) {
+        for (ReviewModel review : reviews.getReviews()) {
             if (review.getReviewText().length() > 10000) {
                 ignore.add(review);
             } else {
@@ -123,8 +120,10 @@ public class ReviewController {
             }
         }
         // TODO: check if this works
-        reviews.removeAll(ignore);
+        reviews.getReviews().removeAll(ignore);
         // TODO: Analysis
+
+        System.out.println(reviews.getReviews().size());
 
         PersonaResponse response = new PersonaResponse(ignore.size());
         return new ResponseEntity<>(response, HttpStatus.OK);

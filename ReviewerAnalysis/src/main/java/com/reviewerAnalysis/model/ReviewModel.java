@@ -2,6 +2,7 @@ package com.reviewerAnalysis.model;
 
 public class ReviewModel {
 
+    private long timestamp;
     private int rating;
     private String reviewText;
 
@@ -17,7 +18,8 @@ public class ReviewModel {
 
     private String persona;
 
-    public ReviewModel(int rating, String reviewText, Long timeSincePreviousReview, boolean hasPicture, boolean hasVideo, boolean isPurchaseVerified, String persona) {
+    public ReviewModel(long timestamp, int rating, String reviewText, Long timeSincePreviousReview, boolean hasPicture, boolean hasVideo, boolean isPurchaseVerified, String persona) {
+        this.timestamp = timestamp;
         this.rating = rating;
         this.reviewText = reviewText;
         this.timeSincePreviousReview = timeSincePreviousReview;
@@ -69,5 +71,13 @@ public class ReviewModel {
 
     public void setHasVideo(boolean hasVideo) {
         this.hasVideo = hasVideo;
+    }
+
+    public long getTimestamp() {
+        return timestamp;
+    }
+
+    public void setTimestamp(long timestamp) {
+        this.timestamp = timestamp;
     }
 }

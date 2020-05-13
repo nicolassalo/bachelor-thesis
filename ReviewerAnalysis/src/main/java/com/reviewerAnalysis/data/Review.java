@@ -40,7 +40,7 @@ public class Review {
         average length of words and sentences
         number of question marks, exclamation marks, consecutive capital letters
         distinct words / all words
-        
+        number of <br> tags
      */
     @Column( length = 10000 ) // limit might vary between platforms, Amazon's limit is 5000
     private String reviewText;
@@ -49,8 +49,12 @@ public class Review {
 
     private String password;
 
-    public Review(int rating, boolean isPurchaseVerified, String reviewText, String lang, String password) {
+    public Review(Long timestamp, Long timeSincePreviousReview, int rating, boolean hasPicture, boolean hasVideo, boolean isPurchaseVerified, String reviewText, String lang, String password) {
+        this.timestamp = timestamp;
+        this.timeSincePreviousReview = timeSincePreviousReview;
         this.rating = rating;
+        this.hasPicture = hasPicture;
+        this.hasVideo = hasVideo;
         this.isPurchaseVerified = isPurchaseVerified;
         this.reviewText = reviewText;
         this.lang = lang;
@@ -59,12 +63,80 @@ public class Review {
 
     public Review() {}
 
+    public Long getId() {
+        return id;
+    }
+
+    public Long getTimestamp() {
+        return timestamp;
+    }
+
+    public void setTimestamp(Long timestamp) {
+        this.timestamp = timestamp;
+    }
+
+    public Long getTimeSincePreviousReview() {
+        return timeSincePreviousReview;
+    }
+
+    public void setTimeSincePreviousReview(Long timeSincePreviousReview) {
+        this.timeSincePreviousReview = timeSincePreviousReview;
+    }
+
     public int getRating() {
         return rating;
     }
 
+    public void setRating(int rating) {
+        this.rating = rating;
+    }
+
+    public boolean isHasPicture() {
+        return hasPicture;
+    }
+
+    public void setHasPicture(boolean hasPicture) {
+        this.hasPicture = hasPicture;
+    }
+
+    public boolean isHasVideo() {
+        return hasVideo;
+    }
+
+    public void setHasVideo(boolean hasVideo) {
+        this.hasVideo = hasVideo;
+    }
+
+    public boolean isPurchaseVerified() {
+        return isPurchaseVerified;
+    }
+
+    public void setPurchaseVerified(boolean purchaseVerified) {
+        isPurchaseVerified = purchaseVerified;
+    }
+
+    public int getNumberProductReviews() {
+        return numberProductReviews;
+    }
+
+    public void setNumberProductReviews(int numberProductReviews) {
+        this.numberProductReviews = numberProductReviews;
+    }
+
+    public int getSentimentAnlysis() {
+        return sentimentAnlysis;
+    }
+
+    public void setSentimentAnlysis(int sentimentAnlysis) {
+        this.sentimentAnlysis = sentimentAnlysis;
+    }
+
     public String getReviewText() {
         return reviewText;
+    }
+
+    public void setReviewText(String reviewText) {
+        this.reviewText = reviewText;
     }
 
     public String getLang() {
@@ -79,12 +151,8 @@ public class Review {
         return password;
     }
 
-    public boolean isPurchaseVerified() {
-        return isPurchaseVerified;
-    }
-
-    public void setPurchaseVerified(boolean purchaseVerified) {
-        isPurchaseVerified = purchaseVerified;
+    public void setPassword(String password) {
+        this.password = password;
     }
 }
 

@@ -8,6 +8,9 @@ public class PersonaResponse {
     private int ignored;
     private List<Item> items;
 
+    // maybe use int for in between values
+    private boolean isSleeper;
+
     public PersonaResponse(int ignored) {
         this.ignored = ignored;
         items = new LinkedList<>();
