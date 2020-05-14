@@ -13,8 +13,8 @@
 (function() {
     'use strict';
     console.log("Script by Nicolas Salomon is active");
-    //var baseUrl = "https://api.ishift.de";
-    var baseUrl = "https://localhost:8443";
+    var baseUrl = "https://api.ishift.de";
+    //var baseUrl = "https://localhost";
     moment.updateLocale('de', {
         monthsShort : [
             "Jan", "Feb", "Mar", "Apr", "Mai", "Jun",
@@ -33,13 +33,12 @@
                 console.log(JSON.parse(localStorage.getItem("reviewData")));
                 $.ajax({
                     method: "POST",
-                    url: baseUrl + "/reviewerAnalysis",
+                    url: baseUrl + ":9443/reviewerAnalysis",
                     data: JSON.stringify({
                         reviews: JSON.parse(localStorage.getItem("reviewData"))
                     }),
                     success: function(response) {
                         console.log("response", response);
-                        changeUseButton();
                     },
                     error: function(error) {
                         alert(error.responseJSON.message);
