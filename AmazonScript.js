@@ -13,7 +13,7 @@
 (function() {
     'use strict';
     console.log("Script by Nicolas Salomon is active");
-    var baseUrl = "https://api.ishift.de";
+    var baseUrl = "https://ishift.de";
     //var baseUrl = "https://localhost";
     moment.updateLocale('de', {
         monthsShort : [
@@ -33,7 +33,7 @@
                 console.log(JSON.parse(localStorage.getItem("reviewData")));
                 $.ajax({
                     method: "POST",
-                    url: baseUrl + ":9443/reviewerAnalysis",
+                    url: baseUrl + "/reviewerAnalysis",
                     data: JSON.stringify({
                         reviews: JSON.parse(localStorage.getItem("reviewData"))
                     }),
@@ -197,7 +197,7 @@
             }
             useElement.click(function() {
                 var password = getPassword();
-                var url = useElement.hasClass("do-use") ? baseUrl + ":8443/sentimentAnalysis/reviews/" + password : baseUrl + ":8443/sentimentAnalysis/delete/reviews/" + password
+                var url = useElement.hasClass("do-use") ? baseUrl + "/sentimentAnalysis/reviews/" + password : baseUrl + "/sentimentAnalysis/delete/reviews/" + password
                 if (password) {
                     $.ajax({
                         method: "POST",
@@ -224,7 +224,7 @@
             checkElement.click(function() {
                 $.ajax({
                     method: "POST",
-                    url: baseUrl + ":8443/sentimentAnalysis/reviews/calcRating",
+                    url: baseUrl + "/sentimentAnalysis/reviews/calcRating",
                     data: JSON.stringify({text: reviewText}),
                     success: function (response) {
                         alert("Rating should be " + response.rating);
