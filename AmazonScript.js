@@ -33,7 +33,7 @@
                 console.log(JSON.parse(localStorage.getItem("reviewData")));
                 $.ajax({
                     method: "POST",
-                    url: baseUrl + "/reviewerAnalysis",
+                    url: baseUrl + "/reviewerAnalysis/",
                     data: JSON.stringify({
                         reviews: JSON.parse(localStorage.getItem("reviewData"))
                     }),
