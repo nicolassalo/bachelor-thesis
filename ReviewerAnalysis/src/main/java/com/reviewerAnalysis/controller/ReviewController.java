@@ -130,7 +130,7 @@ public class ReviewController {
     }
 
     private Language getLanguage(String text) {
-        final String uri = "http://localhost:8081/languageDetection/detect";
+        final String uri = "http://localhost:8082/languageDetection/detect";
 
         RestTemplate restTemplate = new RestTemplate();
         // request body parameters
