@@ -10,6 +10,8 @@ public class ReviewModelListWrapper {
         this.reviews = reviews;
     }
 
+    public ReviewModelListWrapper() {}
+
     public List<ReviewModel> getReviews() {
         return reviews;
     }
