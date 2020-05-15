@@ -126,7 +126,7 @@ public class ReviewController {
         System.out.println(reviews.getReviews().size());
 
         PersonaResponse response = new PersonaResponse(ignore.size());
-        return new ResponseEntity<>(response, HttpStatus.OK);
+        return new ResponseEntity<>(new ResponseMessage("Detected Persona: TODO!"), HttpStatus.OK);
     }
 
     private Language getLanguage(String text) {
