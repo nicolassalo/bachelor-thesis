@@ -108,7 +108,7 @@
             var data = collectPersonaVariables(useElement.parent("div[id^='customer_review']"));
             data.persona = persona;
             console.log(data);
-            if (false && password) {
+            if (password) {
                 $.ajax({
                     method: "POST",
                     url: url,
