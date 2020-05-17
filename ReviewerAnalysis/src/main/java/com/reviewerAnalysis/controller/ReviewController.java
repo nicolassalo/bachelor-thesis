@@ -130,7 +130,7 @@ public class ReviewController {
     }
 
     private int getSentiment(String text) {
-        final String uri = "http://localhost:8082/languageDetection/detect";
+        final String uri = "http://localhost:8082/sentimentAnalysis/reviews/calcRating";
 
         RestTemplate restTemplate = new RestTemplate();
         // request body parameters
