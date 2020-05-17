@@ -112,7 +112,7 @@ public class Review {
     public void setPurchaseVerified(boolean purchaseVerified) {
         isPurchaseVerified = purchaseVerified;
     }
-    
+
     public int getSentimentAnalysis() {
         return sentimentAnalysis;
     }

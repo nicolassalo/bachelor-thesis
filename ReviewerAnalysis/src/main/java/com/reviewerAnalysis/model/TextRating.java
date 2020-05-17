@@ -10,6 +10,8 @@ public class TextRating {
         this.languageConfidence = languageConfidence;
     }
 
+    public TextRating() {}
+
     public double getLanguageConfidence() {
         return languageConfidence;
     }
