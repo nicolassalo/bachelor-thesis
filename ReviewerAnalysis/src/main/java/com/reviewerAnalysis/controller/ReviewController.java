@@ -89,15 +89,15 @@ public class ReviewController {
      */
     @PostMapping("/analyzeReview")
     public ResponseEntity<?> analyzeSingleReview(@Valid @RequestBody ReviewModel review) {
-            if (review.getReviewText().length() > 10000) {
-                return new ResponseEntity<>(new ResponseMessage("Text is too long!"), HttpStatus.BAD_REQUEST);
-            }
-            Language language = getLanguage(review.getReviewText());
-            if (language.getConfidence() < 0.95) {
-                return new ResponseEntity<>(new ResponseMessage("Language might be " + language.getLang() + ", but only " + Math.round(language.getConfidence() * 100) + " % confident!"), HttpStatus.BAD_REQUEST);
-            }
-            // TODO: Analysis
-            return new ResponseEntity<>(new ResponseMessage("Detected Persona: TODO!"), HttpStatus.OK);
+        if (review.getReviewText().length() > 10000) {
+            return new ResponseEntity<>(new ResponseMessage("Text is too long!"), HttpStatus.BAD_REQUEST);
+        }
+        Language language = getLanguage(review.getReviewText());
+        if (language.getConfidence() < 0.95) {
+            return new ResponseEntity<>(new ResponseMessage("Language might be " + language.getLang() + ", but only " + Math.round(language.getConfidence() * 100) + " % confident!"), HttpStatus.BAD_REQUEST);
+        }
+        // TODO: Analysis
+        return new ResponseEntity<>(new ResponseMessage("Detected Persona: TODO!"), HttpStatus.OK);
     }
 
     /**

@@ -6,7 +6,7 @@
 // @author       You
 // @match        https://www.amazon.de/*
 // @grant        none
-// @require http://code.jquery.com/jquery-3.4.1.min.js
+// @require      http://code.jquery.com/jquery-3.4.1.min.js
 // @require      https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.25.3/moment.min.js
 // ==/UserScript==
 
@@ -23,7 +23,7 @@
     });
 
     const scrapeInterval = 1000; // ms
-    const maxReviewAmount = 3;
+    const maxReviewAmount = 10;
 
     // wait for elements to be loaded
     setTimeout(function() {
@@ -57,6 +57,7 @@
             addSingleReviewToSet();
         } else {
             sentimentAnalysis();
+            singleReviewPersonaDetection();
         }
     }, 1000);
 
@@ -74,37 +75,85 @@
         }, 1000);
     });
 
+    function singleReviewPersonaDetection() {
+
+        $("div[id^='customer_review'] .a-row.a-spacing-mini:nth-of-type(1)").after("<b style='color:red;'>Persona:</b> " +
+            "<select class='persona-select'>" +
+            "   <option value='Persona1'>Persona1</option>" +
+            "   <option value='Persona2'>Persona2</option>" +
+            "   <option value='Persona3'>Persona3</option>" +
+            "   <option value='Persona4'>Persona4</option>" +
+            "   <option value='Persona5'>Persona5</option>" +
+            "   <option value='Persona6'>Persona6</option>" +
+            "   <option value='Persona7'>Persona7</option>" +
+            "   <option value='Persona8'>Persona8</option>" +
+            "   <option value='Persona'9>Persona9</option>" +
+            "</select> " +
+            "<a class='a-link-normal use-persona-single do-use'>Use</a> <a class='a-link-normal check-persona-single'>Check</a>");
+
+        var useElement = $("a.use-persona-single");
+        function changeUseButton() {
+            if (useElement.hasClass("do-use")) {
+                useElement.html("Undo");
+                useElement.removeClass("do-use").addClass("undo-use");
+            } else {
+                useElement.html("Use");
+                useElement.removeClass("undo-use").addClass("do-use");
+            }
+        }
+        useElement.click(function() {
+            var password = getPassword();
+            var url = useElement.hasClass("do-use") ? baseUrl + "/reviewerAnalysis/reviews/" + password : baseUrl + "/reviewerAnalysis/delete/reviews/" + password;
+            var persona = $(this).siblings(".persona-select").val();
+            var data = collectPersonaVariables(useElement.parent("div[id^='customer_review']"));
+            data.persona = persona;
+            console.log(data);
+            if (false && password) {
+                $.ajax({
+                    method: "POST",
+                    url: url,
+                    data: JSON.stringify(data),
+                    success: function(response) {
+                        console.log("response", response);
+                        changeUseButton();
+                    },
+                    error: function(error) {
+                        alert(error.responseJSON.message);
+                        if (error.status == 403) {
+                            localStorage.removeItem("SentimentAnalysisAPIPassword");
+                        }
+                    },
+                    contentType: "application/json;charset=utf-8"
+                });
+            } else {
+                alert("Permission denied");
+            }
+        });
+
+        var checkElement = $("a.check-persona-single");
+        checkElement.click(function() {
+            $.ajax({
+                method: "POST",
+                url: baseUrl + "/reviewerAnalysis/analyzeReview",
+                data: JSON.stringify(collectPersonaVariables()),
+                success: function (response) {
+                    alert(response.message);
+                },
+                error: function (error) {
+                    alert(error.responseJSON.message);
+                },
+                contentType: "application/json;charset=utf-8"
+            });
+
+        });
+    }
+
     function addSingleReviewToSet() {
-        var timestamp = moment($(".review-date").text(), "DD MMM YYYY").unix();
-        var datePreviousReview = getUrlParam("previousReview");
-        var timeSincePreviousReview = datePreviousReview ? timestamp - parseInt(datePreviousReview) : null;
-
-        var isPurchaseVerified = $("div.review-format-strip span.a-text-bold").length > 0;
-
-        var reviewText = $(".review-text-content span").html();
-
-        var ratingElement = $("i.review-rating");
-        var ratingClass = ratingElement.attr("class");
-        var rating = parseInt(ratingClass.match(/(\d+)/)[0]);
-
-        var hasImage = $("div.review-image-tile-section").length > 0;
-
-        var hasVideo = $("div.video-block").length > 0;
-
         var reviewData = JSON.parse(localStorage.getItem("reviewData"));
         if (!Array.isArray(reviewData)) {
             reviewData = [];
         }
-        reviewData.push({
-            timestamp: timestamp,
-            rating: rating,
-            reviewText: reviewText,
-            timeSincePreviousReview: timeSincePreviousReview,
-            hasImage: hasImage,
-            hasVideo: hasVideo,
-            isPurchaseVerified: isPurchaseVerified,
-            persona: null
-        });
+        reviewData.push(collectPersonaVariables($("body")));
         localStorage.setItem("reviewData", JSON.stringify(reviewData));
         var links = JSON.parse(localStorage.getItem("reviewLinks"))
         var link = links[0];
@@ -115,6 +164,36 @@
         } else {
             window.location.replace(localStorage.getItem("reviewerProfileLink"));
         }
+    }
+
+    function collectPersonaVariables(parent) {
+        // pass parent element for sites with multiple reviews
+        var timestamp = moment(parent.find(".review-date").text(), "DD MMM YYYY").unix();
+        var datePreviousReview = getUrlParam("previousReview");
+        var timeSincePreviousReview = datePreviousReview ? timestamp - parseInt(datePreviousReview) : null;
+
+        var isPurchaseVerified = parent.find("div.review-format-strip span.a-text-bold").length > 0;
+
+        var reviewText = parent.find(".review-text-content span").html();
+
+        var ratingElement = parent.find("i.review-rating");
+        var ratingClass = ratingElement.attr("class");
+        var rating = parseInt(ratingClass.match(/(\d+)/)[0]);
+
+        var hasImage = parent.find("div.review-image-tile-section").length > 0;
+
+        var hasVideo = parent.find("div.video-block").length > 0;
+
+        return {
+            timestamp: timestamp,
+            rating: rating,
+            reviewText: reviewText,
+            timeSincePreviousReview: timeSincePreviousReview,
+            hasImage: hasImage,
+            hasVideo: hasVideo,
+            isPurchaseVerified: isPurchaseVerified,
+            persona: null
+        };
     }
 
     function reviewerAnalysis() {
@@ -128,7 +207,6 @@
 
             var lastReviewDate = null;
             var counter = 0;
-            console.log("scanning " + reviews.length + " reviews with an interval of " + scrapeInterval + " ms");
 
             var links = [];
 
@@ -183,7 +261,7 @@
                 reviewText: reviewText
             };
 
-            ratingElement.parent().parent().append("<a class='a-link-normal use do-use'>Use</a> <a class='a-link-normal check'>Check</a>");
+            ratingElement.parent().parent().append("<b style='color:red; margin-left:10px'>Sentiment:</b> <a class='a-link-normal use do-use'>Use</a> <a class='a-link-normal check'>Check</a>");
 
             var useElement = $(this).find("a.use");
             function changeUseButton() {
