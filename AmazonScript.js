@@ -77,7 +77,9 @@
 
     function singleReviewPersonaDetection() {
 
-        $("div[id^='customer_review'] .a-row.a-spacing-mini:nth-of-type(1)").after("<b style='color:red;'>Persona:</b> " +
+        $("div[id^='customer_review'] .a-row.a-spacing-mini:nth-of-type(1)").each(function() {
+            var parent = $(this).parent("div[id^='customer_review']");
+            $(this).after("<b style='color:red;'>Persona:</b> " +
             "<select class='persona-select'>" +
             "   <option value='Persona1'>Persona1</option>" +
             "   <option value='Persona2'>Persona2</option>" +
@@ -91,60 +93,61 @@
             "</select> " +
             "<a class='a-link-normal use-persona-single do-use'>Use</a> <a class='a-link-normal check-persona-single'>Check</a>");
 
-        var useElement = $("a.use-persona-single");
-        function changeUseButton() {
-            if (useElement.hasClass("do-use")) {
-                useElement.html("Undo");
-                useElement.removeClass("do-use").addClass("undo-use");
-            } else {
-                useElement.html("Use");
-                useElement.removeClass("undo-use").addClass("do-use");
+            var useElement = parent.find("a.use-persona-single");
+            function changeUseButton() {
+                if (useElement.hasClass("do-use")) {
+                    useElement.html("Undo");
+                    useElement.removeClass("do-use").addClass("undo-use");
+                } else {
+                    useElement.html("Use");
+                    useElement.removeClass("undo-use").addClass("do-use");
+                }
             }
-        }
-        useElement.click(function() {
-            var password = getPassword();
-            var url = useElement.hasClass("do-use") ? baseUrl + "/reviewerAnalysis/reviews/" + password : baseUrl + "/reviewerAnalysis/delete/reviews/" + password;
-            var persona = $(this).siblings(".persona-select").val();
-            var data = collectPersonaVariables(useElement.parent("div[id^='customer_review']"));
-            data.persona = persona;
-            console.log(data);
-            if (password) {
+            useElement.click(function() {
+                var password = getPassword();
+                var url = useElement.hasClass("do-use") ? baseUrl + "/reviewerAnalysis/reviews/" + password : baseUrl + "/reviewerAnalysis/delete/reviews/" + password;
+                var persona = $(this).siblings(".persona-select").val();
+                var data = collectPersonaVariables(useElement.parent("div[id^='customer_review']"));
+                data.persona = persona;
+                console.log(data);
+                if (password) {
+                    $.ajax({
+                        method: "POST",
+                        url: url,
+                        data: JSON.stringify(data),
+                        success: function(response) {
+                            console.log("response", response);
+                            changeUseButton();
+                        },
+                        error: function(error) {
+                            alert(error.responseJSON.message);
+                            if (error.status == 403) {
+                                localStorage.removeItem("SentimentAnalysisAPIPassword");
+                            }
+                        },
+                        contentType: "application/json;charset=utf-8"
+                    });
+                } else {
+                    alert("Permission denied");
+                }
+            });
+
+            var checkElement = parent.find("a.check-persona-single");
+            checkElement.click(function() {
                 $.ajax({
                     method: "POST",
-                    url: url,
-                    data: JSON.stringify(data),
-                    success: function(response) {
-                        console.log("response", response);
-                        changeUseButton();
+                    url: baseUrl + "/reviewerAnalysis/analyzeReview",
+                    data: JSON.stringify(collectPersonaVariables()),
+                    success: function (response) {
+                        alert(response.message);
                     },
-                    error: function(error) {
+                    error: function (error) {
                         alert(error.responseJSON.message);
-                        if (error.status == 403) {
-                            localStorage.removeItem("SentimentAnalysisAPIPassword");
-                        }
                     },
                     contentType: "application/json;charset=utf-8"
                 });
-            } else {
-                alert("Permission denied");
-            }
-        });
 
-        var checkElement = $("a.check-persona-single");
-        checkElement.click(function() {
-            $.ajax({
-                method: "POST",
-                url: baseUrl + "/reviewerAnalysis/analyzeReview",
-                data: JSON.stringify(collectPersonaVariables()),
-                success: function (response) {
-                    alert(response.message);
-                },
-                error: function (error) {
-                    alert(error.responseJSON.message);
-                },
-                contentType: "application/json;charset=utf-8"
             });
-
         });
     }
 

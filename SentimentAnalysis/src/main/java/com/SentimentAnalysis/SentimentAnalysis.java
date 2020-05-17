@@ -61,7 +61,7 @@ public class SentimentAnalysis {
         }
     }
 
-    public int classifyNewTweet(String text) {
+    public int classifyNewReview(String text) {
         DocumentCategorizerME myCategorizer = new DocumentCategorizerME(model);
         double[] outcomes = myCategorizer.categorize(text);
         String category = myCategorizer.getBestCategory(outcomes);

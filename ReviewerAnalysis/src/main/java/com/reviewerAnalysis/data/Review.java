@@ -46,7 +46,9 @@ public class Review {
 
     private String password;
 
-    public Review(Long timestamp, Long timeSincePreviousReview, int rating, boolean hasPicture, boolean hasVideo, boolean isPurchaseVerified, int sentimentAnalysis, String reviewText, String lang, String password) {
+    private String persona;
+
+    public Review(Long timestamp, Long timeSincePreviousReview, int rating, boolean hasPicture, boolean hasVideo, boolean isPurchaseVerified, int sentimentAnalysis, String reviewText, String lang, String password, String persona) {
         this.timestamp = timestamp;
         this.timeSincePreviousReview = timeSincePreviousReview;
         this.rating = rating;
@@ -57,6 +59,7 @@ public class Review {
         this.reviewText = reviewText;
         this.lang = lang;
         this.password = password;
+        this.persona = persona;
     }
 
     public Review() {}
@@ -143,6 +146,14 @@ public class Review {
 
     public void setPassword(String password) {
         this.password = password;
+    }
+
+    public String getPersona() {
+        return persona;
+    }
+
+    public void setPersona(String persona) {
+        this.persona = persona;
     }
 }
 

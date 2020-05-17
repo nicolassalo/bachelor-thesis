@@ -8,9 +8,7 @@ import com.SentimentAnalysis.model.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.event.EventListener;
-import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.client.RestTemplate;
@@ -50,7 +48,7 @@ public class ReviewController {
             if (language.getConfidence() < 0.95) {
                 return new ResponseEntity<>(new ResponseMessage("Language might be " + language.getLang() + ", but only " + Math.round(language.getConfidence() * 100) + " % confident!"), HttpStatus.BAD_REQUEST);
             }
-            reviewRepository.save(new Review(review.getRating(), editReviewText(review), language.getLang(), password));
+            reviewRepository.save(new Review(review.getRating(), editReviewText(review.getReviewText()), language.getLang(), password));
             trainSentimentModel();
             return new ResponseEntity<>(new ResponseMessage("Review saved!"), HttpStatus.OK);
         } else {
@@ -70,7 +68,7 @@ public class ReviewController {
     @PostMapping("/delete/reviews/{password}")
     public ResponseEntity<?> deleteReview(@Valid @RequestBody ReviewModel review, @PathVariable String password) {
         if (passwordRepository.existsByPassword(password)) {
-            long count = reviewRepository.deleteByReviewTextAndRatingAndPassword(editReviewText(review), review.getRating(), password);
+            long count = reviewRepository.deleteByReviewTextAndRatingAndPassword(editReviewText(review.getReviewText()), review.getRating(), password);
             if (count > 0) {
                 trainSentimentModel();
                 return new ResponseEntity<>(new ResponseMessage("Deleted " + count + " reviews!"), HttpStatus.OK);
@@ -89,7 +87,7 @@ public class ReviewController {
             if (language.getConfidence() < 0.95) {
                 return new ResponseEntity<>(new ResponseMessage("Not sure that this is really german. Only" + " with a confidence of " + Math.round(language.getConfidence() * 100) + " %."), HttpStatus.BAD_REQUEST);
             }
-            int rating = SentimentAnalysis.getInstance().classifyNewTweet(text.getText());
+            int rating = SentimentAnalysis.getInstance().classifyNewReview(editReviewText(text.getText()));
             return new ResponseEntity<>(new TextRating(rating, language.getConfidence()), HttpStatus.OK);
         }
         return new ResponseEntity<>(new ResponseMessage("Language currently not supported. Language found: " + language.getLang() + " with a confidence of " + Math.round(language.getConfidence() * 100) + " %."), HttpStatus.BAD_REQUEST);
@@ -108,8 +106,8 @@ public class ReviewController {
         return languages[0];
     }
 
-    private String editReviewText(ReviewModel reviewModel) {
-        String editedString = reviewModel.getReviewText()
+    private String editReviewText(String text) {
+        return text
                 .replaceAll("\\„", " „ ")
                 .replaceAll("\\“", " “" )
                 .replaceAll("\\.", " . ")
@@ -117,8 +115,6 @@ public class ReviewController {
                 .replaceAll("\\,", " , ")
                 .replaceAll("\\:", " : ")
                 .replaceAll("\\;", " ; ");
-
-        return editedString;
     }
 
     @EventListener(ApplicationReadyEvent.class)
