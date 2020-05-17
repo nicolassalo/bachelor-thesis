@@ -52,7 +52,7 @@ public class ReviewController {
             if (language.getConfidence() < 0.95) {
                 return new ResponseEntity<>(new ResponseMessage("Language might be " + language.getLang() + ", but only " + Math.round(language.getConfidence() * 100) + " % confident!"), HttpStatus.BAD_REQUEST);
             }
-            reviewRepository.save(new Review(review.getTimestamp(), review.getTimeSincePreviousReview(), review.getRating(), review.isHasPicture(), review.isHasVideo(), review.isPurchaseVerified(), review.getReviewText(), language.getLang(), password));
+            reviewRepository.save(new Review(review.getTimestamp(), review.getTimeSincePreviousReview(), review.getRating(), review.isHasPicture(), review.isHasVideo(), review.isPurchaseVerified(), getSentiment(review.getReviewText()), review.getReviewText(), language.getLang(), password));
             return new ResponseEntity<>(new ResponseMessage("Review saved!"), HttpStatus.OK);
         } else {
             return new ResponseEntity<>(new ResponseMessage("Permission denied!"), HttpStatus.FORBIDDEN);
@@ -127,6 +127,19 @@ public class ReviewController {
 
         PersonaResponse response = new PersonaResponse(ignore.size());
         return new ResponseEntity<>(new ResponseMessage("Detected Persona: TODO!"), HttpStatus.OK);
+    }
+
+    private int getSentiment(String text) {
+        final String uri = "http://localhost:8082/languageDetection/detect";
+
+        RestTemplate restTemplate = new RestTemplate();
+        // request body parameters
+        Map<String, String> map = new HashMap<>();
+        map.put("text", text);
+
+        ResponseEntity<TextRating> response = restTemplate.postForEntity(uri, map, TextRating.class);
+        TextRating rating = response.getBody();
+        return rating.getRating();
     }
 
     private Language getLanguage(String text) {

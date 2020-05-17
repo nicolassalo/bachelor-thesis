@@ -28,11 +28,8 @@ public class Review {
 
     private boolean isPurchaseVerified;
 
-    // how many reviews the product has
-    private int numberProductReviews;
-
     // calculated ideal rating
-    private int sentimentAnlysis;
+    private int sentimentAnalysis;
 
     /*
     data extractable from reviewText:
@@ -49,13 +46,14 @@ public class Review {
 
     private String password;
 
-    public Review(Long timestamp, Long timeSincePreviousReview, int rating, boolean hasPicture, boolean hasVideo, boolean isPurchaseVerified, String reviewText, String lang, String password) {
+    public Review(Long timestamp, Long timeSincePreviousReview, int rating, boolean hasPicture, boolean hasVideo, boolean isPurchaseVerified, int sentimentAnalysis, String reviewText, String lang, String password) {
         this.timestamp = timestamp;
         this.timeSincePreviousReview = timeSincePreviousReview;
         this.rating = rating;
         this.hasPicture = hasPicture;
         this.hasVideo = hasVideo;
         this.isPurchaseVerified = isPurchaseVerified;
+        this.sentimentAnalysis = sentimentAnalysis;
         this.reviewText = reviewText;
         this.lang = lang;
         this.password = password;
@@ -114,21 +112,13 @@ public class Review {
     public void setPurchaseVerified(boolean purchaseVerified) {
         isPurchaseVerified = purchaseVerified;
     }
-
-    public int getNumberProductReviews() {
-        return numberProductReviews;
+    
+    public int getSentimentAnalysis() {
+        return sentimentAnalysis;
     }
 
-    public void setNumberProductReviews(int numberProductReviews) {
-        this.numberProductReviews = numberProductReviews;
-    }
-
-    public int getSentimentAnlysis() {
-        return sentimentAnlysis;
-    }
-
-    public void setSentimentAnlysis(int sentimentAnlysis) {
-        this.sentimentAnlysis = sentimentAnlysis;
+    public void setSentimentAnalysis(int sentimentAnalysis) {
+        this.sentimentAnalysis = sentimentAnalysis;
     }
 
     public String getReviewText() {
