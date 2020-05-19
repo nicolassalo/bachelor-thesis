@@ -20,6 +20,10 @@ public class Persona {
 
     public Persona() {}
 
+    public Long getId() {
+        return id;
+    }
+
     public String getDescription() {
         return description;
     }

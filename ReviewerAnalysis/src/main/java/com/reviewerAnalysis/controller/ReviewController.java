@@ -1,8 +1,7 @@
 package com.reviewerAnalysis.controller;
 
-import com.reviewerAnalysis.data.PasswordRepository;
-import com.reviewerAnalysis.data.Review;
-import com.reviewerAnalysis.data.ReviewRepository;
+import com.reviewerAnalysis.NaturalLanguageProcessor;
+import com.reviewerAnalysis.data.*;
 import com.reviewerAnalysis.model.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
@@ -29,6 +28,9 @@ public class ReviewController {
 
     @Autowired
     PasswordRepository passwordRepository;
+
+    @Autowired
+    PersonaRepository personaRepository;
 
     @GetMapping("/")
     public ResponseEntity<?> test() {
@@ -123,6 +125,10 @@ public class ReviewController {
         // TODO: check if this works
         reviews.getReviews().removeAll(ignore);
         // TODO: Analysis
+        List nlp = new LinkedList();
+        for (ReviewModel review : reviews.getReviews()) {
+            nlp.add(numberToPersona(NaturalLanguageProcessor.getInstance().classifyNewReview(editReviewText(review.getReviewText()))));
+        }
 
         System.out.println(reviews.getReviews().size());
 
@@ -156,8 +162,8 @@ public class ReviewController {
         return languages[0];
     }
 
-    private String editReviewText(ReviewModel reviewModel) {
-        String editedString = reviewModel.getReviewText()
+    private String editReviewText(String text) {
+        return text
                 .replaceAll("\\„", " „ ")
                 .replaceAll("\\“", " “" )
                 .replaceAll("\\.", " . ")
@@ -165,10 +171,30 @@ public class ReviewController {
                 .replaceAll("\\,", " , ")
                 .replaceAll("\\:", " : ")
                 .replaceAll("\\;", " ; ");
+    }
 
-        return editedString;
+    private int personaToNumber(String persona) {
+        return personaRepository.findByName(persona).get().getId().intValue();
+    }
+
+    private String numberToPersona(int number) {
+        return personaRepository.findById((long) number).get().getName();
     }
 
     @EventListener(ApplicationReadyEvent.class)
-    public void initialize() {}
+    public void initialize() {
+        trainSentimentModel();
+    }
+
+    private void trainSentimentModel() {
+        List<Review> reviews = reviewRepository.findByLang("de");
+        List<String> trainingData = new LinkedList<>();
+        for (Review review : reviews) {
+            if (review.getPersona() != null) {
+                trainingData.add(personaToNumber(review.getPersona()) + "\t" + editReviewText(review.getReviewText()) + "\n");
+            }
+        }
+
+        NaturalLanguageProcessor.getInstance().trainModel("de", trainingData);
+    }
 }

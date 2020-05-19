@@ -1,4 +1,4 @@
-package com.SentimentAnalysis;
+package com.reviewerAnalysis;
 
 import opennlp.tools.doccat.DoccatModel;
 import opennlp.tools.doccat.DocumentCategorizerME;
@@ -10,32 +10,31 @@ import java.io.*;
 import java.util.List;
 
 
-public class SentimentAnalysis {
+public class NaturalLanguageProcessor {
 
-    private static SentimentAnalysis instance = null;
+    private static NaturalLanguageProcessor instance = null;
 
-    public static SentimentAnalysis getInstance() {
+    public static NaturalLanguageProcessor getInstance() {
         if (instance == null) {
-            instance = new SentimentAnalysis();
+            instance = new NaturalLanguageProcessor();
         }
         return instance;
     }
 
-    private SentimentAnalysis() {}
+    private NaturalLanguageProcessor() {}
 
     DoccatModel model;
-
 
     public void trainModel(String lang, List<String> trainingData) {
         InputStream dataIn = null;
         try {
-            BufferedWriter writer = new BufferedWriter(new FileWriter("sentiment-training-" + lang + ".txt"));
+            BufferedWriter writer = new BufferedWriter(new FileWriter("persona-training-" + lang + ".txt"));
             for (String string : trainingData) {
                 writer.write(string);
             }
             writer.close();
 
-            dataIn = new FileInputStream("sentiment-training-" + lang + ".txt");
+            dataIn = new FileInputStream("persona-training-" + lang + ".txt");
             ObjectStream lineStream = new PlainTextByLineStream(dataIn, "UTF-8");
             ObjectStream sampleStream = new DocumentSampleStream(lineStream);
             // Specifies the minimum number of times a feature must be seen
