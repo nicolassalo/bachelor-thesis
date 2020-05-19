@@ -192,7 +192,7 @@
             rating: rating,
             reviewText: reviewText,
             timeSincePreviousReview: timeSincePreviousReview,
-            hasImage: hasImage,
+            hasPicture: hasImage,
             hasVideo: hasVideo,
             isPurchaseVerified: isPurchaseVerified,
             persona: null
