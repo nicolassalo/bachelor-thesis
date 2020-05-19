@@ -81,15 +81,13 @@
             var parent = $(this).parent("div[id^='customer_review']");
             $(this).after("<b style='color:red;'>Persona:</b> " +
             "<select class='persona-select'>" +
-            "   <option value='Persona1'>Persona1</option>" +
-            "   <option value='Persona2'>Persona2</option>" +
-            "   <option value='Persona3'>Persona3</option>" +
-            "   <option value='Persona4'>Persona4</option>" +
-            "   <option value='Persona5'>Persona5</option>" +
-            "   <option value='Persona6'>Persona6</option>" +
-            "   <option value='Persona7'>Persona7</option>" +
-            "   <option value='Persona8'>Persona8</option>" +
-            "   <option value='Persona'9>Persona9</option>" +
+            "   <option title='Jemand der sich mit dem Produkt auseinandergesetzt hat, evtl. Pros und Cons vergleicht' value='Expert'>Experte</option>" +
+            "   <option title='Jemand der zu viel vom Produkt erwartet und übertrieben unzufrieden ist.' value='Waiting for Mr. Perfect'>Perfektionist</option>" +
+            "   <option title='Jemand der über Nachteile hinweg sieht und immer zufrieden ist' value='Not waiting for Mr. Perfect'>Anti-Perfektionist</option>" +
+            "   <option title='Jemand der um den heißen Brei redet und nicht wirklich viel über das Produkt sagt, evtl zu viel persönliches' value='Beating around the bush'>Um den heißen Brei Redner</option>" +
+            "   <option title='Jemand der aggressiv schreibt, meist sehr unzufrieden' value='Rager'>Aggro</option>" +
+            "   <option title='Jemand der nur positives über ein Produkt zu berichten hat' value='All great'>Alles super</option>" +
+            "   <option title='Jemand der nur positives über ein Produkt zu berichten hat' value='All bad'>Alles schrecklich</option>" +
             "</select> " +
             "<a class='a-link-normal use-persona-single do-use'>Use</a> <a class='a-link-normal check-persona-single'>Check</a>");
 
