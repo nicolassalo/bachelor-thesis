@@ -32,9 +32,9 @@ public class ReviewController {
     @Autowired
     PersonaRepository personaRepository;
 
-    @GetMapping("/")
-    public ResponseEntity<?> test() {
-        return new ResponseEntity<>(new ResponseMessage("Test!"), HttpStatus.OK);
+    @GetMapping("/personas")
+    public List<Persona> test() {
+        return personaRepository.findAll();
     }
 
     /**
