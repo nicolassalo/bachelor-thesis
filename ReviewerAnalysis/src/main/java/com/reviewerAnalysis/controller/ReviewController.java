@@ -1,6 +1,7 @@
 package com.reviewerAnalysis.controller;
 
 import com.reviewerAnalysis.NaturalLanguageProcessor;
+import com.reviewerAnalysis.PersonaDetection;
 import com.reviewerAnalysis.data.*;
 import com.reviewerAnalysis.model.*;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -210,6 +211,8 @@ public class ReviewController {
     public void initialize() {
         // do not train model before having at least 2 examples per persona
         //trainSentimentModel();
+        PersonaDetection.getInstance().train();
+        PersonaDetection.getInstance().detectPersona();
     }
 
     private void trainSentimentModel() {
