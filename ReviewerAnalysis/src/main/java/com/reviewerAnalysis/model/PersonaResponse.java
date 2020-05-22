@@ -6,21 +6,44 @@ import java.util.List;
 public class PersonaResponse {
 
     private int ignored;
-    private List<Item> items;
+    private List<Item> personasByReviewVariables;
+    private List<Item> personasByLanguageProcessing;
 
-    // maybe use int for in between values
-    private boolean isSleeper;
+    private Item result;
 
-    public PersonaResponse(int ignored) {
+    private int activeness;
+    private int elaborateness;
+
+    public PersonaResponse(int ignored, List<Item> personasByLanguageProcessing, List<Item> personasByReviewVariables, Item result, int activeness, int elaborateness) {
         this.ignored = ignored;
-        items = new LinkedList<>();
+        this.personasByLanguageProcessing = personasByLanguageProcessing;
+        this.personasByReviewVariables = personasByReviewVariables;
+        this.result = result;
+        this.activeness = activeness;
+        this.elaborateness = elaborateness;
     }
 
-    public void addItem(Item item) {
-        items.add(item);
+    public int getActiveness() {
+        return activeness;
     }
 
-    public class Item {
+    public int getElaborateness() {
+        return elaborateness;
+    }
+
+    public int getIgnored() {
+        return ignored;
+    }
+
+    public List<Item> getPersonasByReviewVariables() {
+        return personasByReviewVariables;
+    }
+
+    public List<Item> getPersonasByLanguageProcessing() {
+        return personasByLanguageProcessing;
+    }
+
+    public static class Item {
 
         private String persona;
         private double confidence;
@@ -28,6 +51,14 @@ public class PersonaResponse {
         public Item(String persona, double confidence) {
             this.persona = persona;
             this.confidence = confidence;
+        }
+
+        public String getPersona() {
+            return persona;
+        }
+
+        public double getConfidence() {
+            return confidence;
         }
     }
 }

@@ -22,6 +22,8 @@ public class Review {
 
     private int rating;
 
+    private int length;
+
     private boolean hasPicture;
 
     private boolean hasVideo;
@@ -48,10 +50,11 @@ public class Review {
 
     private String persona;
 
-    public Review(Long timestamp, Long timeSincePreviousReview, int rating, boolean hasPicture, boolean hasVideo, boolean isPurchaseVerified, int sentimentAnalysis, String reviewText, String lang, String password, String persona) {
+    public Review(Long timestamp, Long timeSincePreviousReview, int rating, int length, boolean hasPicture, boolean hasVideo, boolean isPurchaseVerified, int sentimentAnalysis, String reviewText, String lang, String password, String persona) {
         this.timestamp = timestamp;
         this.timeSincePreviousReview = timeSincePreviousReview;
         this.rating = rating;
+        this.length = length;
         this.hasPicture = hasPicture;
         this.hasVideo = hasVideo;
         this.isPurchaseVerified = isPurchaseVerified;
@@ -154,6 +157,14 @@ public class Review {
 
     public void setPersona(String persona) {
         this.persona = persona;
+    }
+
+    public int getLength() {
+        return length;
+    }
+
+    public void setLength(int length) {
+        this.length = length;
     }
 }
 

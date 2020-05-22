@@ -14,7 +14,7 @@
     'use strict';
     console.log("Script by Nicolas Salomon is active");
     var baseUrl = "https://ishift.de";
-    //var baseUrl = "https://localhost";
+    //var baseUrl = "http://localhost";
     moment.updateLocale('de', {
         monthsShort : [
             "Jan", "Feb", "Mar", "Apr", "Mai", "Jun",
@@ -76,77 +76,90 @@
     });
 
     function singleReviewPersonaDetection() {
+        $.ajax({
+            method: "GET",
+            url: baseUrl + "/reviewerAnalysis/personas",
+            success: function(response) {
+                init(response);
+            },
+            error: function(error) {
+                alert(error.responseJSON.message);
+            },
+            contentType: "application/json;charset=utf-8"
+        });
 
-        $("div[id^='customer_review'] .a-row.a-spacing-mini:nth-of-type(1)").each(function() {
-            var parent = $(this).parent("div[id^='customer_review']");
-            $(this).after("<b style='color:red;'>Persona:</b> " +
-            "<select class='persona-select'>" +
-            "   <option title='Jemand der sich mit dem Produkt auseinandergesetzt hat, evtl. Pros und Cons vergleicht' value='Expert'>Experte</option>" +
-            "   <option title='Jemand der zu viel vom Produkt erwartet und übertrieben unzufrieden ist.' value='Waiting for Mr. Perfect'>Perfektionist</option>" +
-            "   <option title='Jemand der über Nachteile hinweg sieht und immer zufrieden ist' value='Not waiting for Mr. Perfect'>Anti-Perfektionist</option>" +
-            "   <option title='Jemand der um den heißen Brei redet und nicht wirklich viel über das Produkt sagt, evtl zu viel persönliches' value='Beating around the bush'>Um den heißen Brei Redner</option>" +
-            "   <option title='Jemand der aggressiv schreibt, meist sehr unzufrieden' value='Rager'>Aggro</option>" +
-            "   <option title='Jemand der nur positives über ein Produkt zu berichten hat' value='All great'>Alles super</option>" +
-            "   <option title='Jemand der nur positives über ein Produkt zu berichten hat' value='All bad'>Alles schrecklich</option>" +
-            "</select> " +
-            "<a class='a-link-normal use-persona-single do-use'>Use</a> <a class='a-link-normal check-persona-single'>Check</a>");
+        function init(personas) {
+            $("div[id^='customer_review'] .a-row.a-spacing-mini:nth-of-type(1)").each(function () {
+                var parent = $(this).parent("div[id^='customer_review']");
+                $(this).after(
+                    "<b style='color:red;'>Persona:</b> " +
+                    "<select class='persona-select'></select> " +
+                    "<a class='a-link-normal use-persona-single do-use'>Use</a> <a class='a-link-normal check-persona-single'>Check</a>"
+                );
 
-            var useElement = parent.find("a.use-persona-single");
-            function changeUseButton() {
-                if (useElement.hasClass("do-use")) {
-                    useElement.html("Undo");
-                    useElement.removeClass("do-use").addClass("undo-use");
-                } else {
-                    useElement.html("Use");
-                    useElement.removeClass("undo-use").addClass("do-use");
+                for (var i = 0; i < personas.length; i++) {
+                    parent.find(".persona-select").append('<option title="' + personas[i].description + '" value="' + personas[i].name + '">' + personas[i].name + '</option>');
                 }
-            }
-            useElement.click(function() {
-                var password = getPassword();
-                var url = useElement.hasClass("do-use") ? baseUrl + "/reviewerAnalysis/reviews/" + password : baseUrl + "/reviewerAnalysis/delete/reviews/" + password;
-                var persona = $(this).siblings(".persona-select").val();
-                var data = collectPersonaVariables(useElement.parent("div[id^='customer_review']"));
-                data.persona = persona;
-                console.log(data);
-                if (password) {
+
+                var useElement = parent.find("a.use-persona-single");
+
+                function changeUseButton() {
+                    if (useElement.hasClass("do-use")) {
+                        useElement.html("Undo");
+                        useElement.removeClass("do-use").addClass("undo-use");
+                    } else {
+                        useElement.html("Use");
+                        useElement.removeClass("undo-use").addClass("do-use");
+                    }
+                }
+
+                useElement.click(function () {
+                    var password = getPassword();
+                    var url = useElement.hasClass("do-use") ? baseUrl + "/reviewerAnalysis/reviews/" + password : baseUrl + "/reviewerAnalysis/delete/reviews/" + password;
+                    var persona = $(this).siblings(".persona-select").val();
+                    var data = collectPersonaVariables(parent);
+                    data.persona = persona;
+                    console.log(data);
+                    if (password) {
+                        $.ajax({
+                            method: "POST",
+                            url: url,
+                            data: JSON.stringify(data),
+                            success: function (response) {
+                                console.log("response", response);
+                                changeUseButton();
+                            },
+                            error: function (error) {
+                                alert(error.responseJSON.message);
+                                if (error.status == 403) {
+                                    localStorage.removeItem("SentimentAnalysisAPIPassword");
+                                }
+                            },
+                            contentType: "application/json;charset=utf-8"
+                        });
+                    } else {
+                        alert("Permission denied");
+                    }
+                });
+
+                var checkElement = parent.find("a.check-persona-single");
+                checkElement.click(function () {
                     $.ajax({
                         method: "POST",
-                        url: url,
-                        data: JSON.stringify(data),
-                        success: function(response) {
-                            console.log("response", response);
-                            changeUseButton();
+                        url: baseUrl + "/reviewerAnalysis/analyzeReview",
+                        data: JSON.stringify(collectPersonaVariables(parent)),
+                        success: function (response) {
+                            alert(response.message);
                         },
-                        error: function(error) {
+                        error: function (error) {
                             alert(error.responseJSON.message);
-                            if (error.status == 403) {
-                                localStorage.removeItem("SentimentAnalysisAPIPassword");
-                            }
                         },
                         contentType: "application/json;charset=utf-8"
                     });
-                } else {
-                    alert("Permission denied");
-                }
-            });
 
-            var checkElement = parent.find("a.check-persona-single");
-            checkElement.click(function() {
-                $.ajax({
-                    method: "POST",
-                    url: baseUrl + "/reviewerAnalysis/analyzeReview",
-                    data: JSON.stringify(collectPersonaVariables()),
-                    success: function (response) {
-                        alert(response.message);
-                    },
-                    error: function (error) {
-                        alert(error.responseJSON.message);
-                    },
-                    contentType: "application/json;charset=utf-8"
                 });
-
             });
-        });
+        }
     }
 
     function addSingleReviewToSet() {

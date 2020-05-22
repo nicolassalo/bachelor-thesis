@@ -13,10 +13,9 @@ import org.springframework.web.client.RestTemplate;
 
 import javax.transaction.Transactional;
 import javax.validation.Valid;
-import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 @CrossOrigin(maxAge = 3600)
 @RestController
@@ -34,7 +33,7 @@ public class ReviewController {
 
     @GetMapping("/personas")
     public List<Persona> test() {
-        return personaRepository.findAll();
+        return personaRepository.findAllByOrderByIdAsc();
     }
 
     /**
@@ -55,7 +54,7 @@ public class ReviewController {
                 return new ResponseEntity<>(new ResponseMessage("Language might be " + language.getLang() + ", but only " + Math.round(language.getConfidence() * 100) + " % confident!"), HttpStatus.BAD_REQUEST);
             }
             System.out.println("hasPicture " + review.isHasPicture());
-            reviewRepository.save(new Review(review.getTimestamp(), review.getTimeSincePreviousReview(), review.getRating(), review.isHasPicture(), review.isHasVideo(), review.isPurchaseVerified(), getSentiment(review.getReviewText()), review.getReviewText(), language.getLang(), password, review.getPersona()));
+            reviewRepository.save(new Review(review.getTimestamp(), review.getTimeSincePreviousReview(), review.getRating(), review.getReviewText().length(), review.isHasPicture(), review.isHasVideo(), review.isPurchaseVerified(), getSentiment(review.getReviewText()), review.getReviewText(), language.getLang(), password, review.getPersona()));
             return new ResponseEntity<>(new ResponseMessage("Review saved!"), HttpStatus.OK);
         } else {
             return new ResponseEntity<>(new ResponseMessage("Permission denied!"), HttpStatus.FORBIDDEN);
@@ -99,6 +98,7 @@ public class ReviewController {
         if (language.getConfidence() < 0.95) {
             return new ResponseEntity<>(new ResponseMessage("Language might be " + language.getLang() + ", but only " + Math.round(language.getConfidence() * 100) + " % confident!"), HttpStatus.BAD_REQUEST);
         }
+        String nlpResult = numberToPersona(NaturalLanguageProcessor.getInstance().classifyNewReview(editReviewText(review.getReviewText())));
         // TODO: Analysis
         return new ResponseEntity<>(new ResponseMessage("Detected Persona: TODO!"), HttpStatus.OK);
     }
@@ -111,6 +111,8 @@ public class ReviewController {
      */
     @PostMapping("/")
     public ResponseEntity<?> analyzeMultipleReviews(@Valid @RequestBody ReviewModelListWrapper reviews) {
+        System.out.println(reviews.getReviews() == null);
+        System.out.println(reviews.getReviews().size());
         List<ReviewModel> ignore = new LinkedList<>();
         for (ReviewModel review : reviews.getReviews()) {
             if (review.getReviewText().length() > 10000) {
@@ -122,18 +124,41 @@ public class ReviewController {
                 }
             }
         }
-        // TODO: check if this works
         reviews.getReviews().removeAll(ignore);
+
         // TODO: Analysis
-        List nlp = new LinkedList();
+
+        List<String> nlpResults = new LinkedList<>();
         for (ReviewModel review : reviews.getReviews()) {
-            nlp.add(numberToPersona(NaturalLanguageProcessor.getInstance().classifyNewReview(editReviewText(review.getReviewText()))));
+            nlpResults.add(numberToPersona(NaturalLanguageProcessor.getInstance().classifyNewReview(editReviewText(review.getReviewText()))));
         }
 
         System.out.println(reviews.getReviews().size());
+        PersonaResponse response = new PersonaResponse(ignore.size(), getItems(nlpResults), getItems(nlpResults), getItems(nlpResults).get(0), 0,0);
+        return new ResponseEntity<>(response, HttpStatus.OK);
+    }
 
-        PersonaResponse response = new PersonaResponse(ignore.size());
-        return new ResponseEntity<>(new ResponseMessage("Detected Persona: TODO!"), HttpStatus.OK);
+    private List<PersonaResponse.Item> getItems(List<String> results) {
+        Map<String, Long> result =
+                results.stream().collect(
+                        Collectors.groupingBy(
+                                Function.identity(), Collectors.counting()
+                        )
+                );
+
+        Map<String, Long> finalMap = new LinkedHashMap<>();
+
+        //Sort a map and add to finalMap
+        result.entrySet().stream()
+                .sorted(Map.Entry.<String, Long>comparingByValue()
+                        .reversed()).forEachOrdered(e -> finalMap.put(e.getKey(), e.getValue()));
+
+        List<PersonaResponse.Item> items = new LinkedList<>();
+        for (Map.Entry<String, Long> entry : finalMap.entrySet()) {
+            items.add(new PersonaResponse.Item(entry.getKey(), (double) entry.getValue() / results.size()));
+        }
+
+        return items;
     }
 
     private int getSentiment(String text) {
@@ -165,7 +190,7 @@ public class ReviewController {
     private String editReviewText(String text) {
         return text
                 .replaceAll("\\„", " „ ")
-                .replaceAll("\\“", " “" )
+                .replaceAll("\\“", " “ ")
                 .replaceAll("\\.", " . ")
                 .replaceAll("\\!", " ! ")
                 .replaceAll("\\,", " , ")
@@ -183,7 +208,8 @@ public class ReviewController {
 
     @EventListener(ApplicationReadyEvent.class)
     public void initialize() {
-        trainSentimentModel();
+        // do not train model before having at least 2 examples per persona
+        //trainSentimentModel();
     }
 
     private void trainSentimentModel() {

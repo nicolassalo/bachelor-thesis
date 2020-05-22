@@ -7,5 +7,6 @@ import java.util.Optional;
 
 public interface PersonaRepository extends JpaRepository<Persona, Long> {
     Optional<Persona> findByName(String name);
+    List<Persona> findAllByOrderByIdAsc();
 }
 
