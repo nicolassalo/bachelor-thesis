@@ -32,6 +32,9 @@ public class ReviewController {
     @Autowired
     PersonaRepository personaRepository;
 
+    @Autowired
+    PersonaDetection personaDetection;
+
     @GetMapping("/personas")
     public List<Persona> test() {
         return personaRepository.findAllByOrderByIdAsc();
@@ -211,8 +214,8 @@ public class ReviewController {
     public void initialize() {
         // do not train model before having at least 2 examples per persona
         //trainSentimentModel();
-        PersonaDetection.getInstance().train();
-        PersonaDetection.getInstance().detectPersona();
+        personaDetection.train("de");
+        personaDetection.detectPersona();
     }
 
     private void trainSentimentModel() {
