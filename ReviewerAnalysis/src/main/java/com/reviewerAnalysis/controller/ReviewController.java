@@ -148,32 +148,29 @@ public class ReviewController {
         double wekaRelevanceFactor = 2; // how much more weight is on the wekaResults
         double nlpRelevanecFactor = 1; // how much more weight is on the nlpResults
         double[] probabilities = new double[personaRepository.findAll().size()];
-        double[] divisor = new double[personaRepository.findAll().size()];
         for (PersonaResponse.Item item : wekaResults) {
             int position = personaRepository.findByName(item.getPersona()).get().getId().intValue() - 1;
             probabilities[position] += item.getConfidence() * wekaRelevanceFactor;
-            divisor[position] += wekaRelevanceFactor;
         }
 
         for (PersonaResponse.Item item : nlpResults) {
             int position = personaRepository.findByName(item.getPersona()).get().getId().intValue() - 1;
             probabilities[position] += item.getConfidence() * nlpRelevanecFactor;
-            divisor[position] += nlpRelevanecFactor;
         }
 
-        for (int i = 0; i < probabilities.length; i++) {
-            probabilities[i] /= divisor[i];
-        }
+
         int index = 0;
+        double sum = 0;
         double highestValue = probabilities[0];
         for (int i = 1; i < probabilities.length; i++) {
             if (probabilities[i] > highestValue) {
                 index = i;
                 highestValue = probabilities[i];
             }
+            sum += probabilities[i];
         }
 
-        return new PersonaResponse.Item(personaRepository.findById((long) index + 1).get().getName(), highestValue);
+        return new PersonaResponse.Item(personaRepository.findById((long) index + 1).get().getName(), highestValue / sum);
     }
 
     /*
