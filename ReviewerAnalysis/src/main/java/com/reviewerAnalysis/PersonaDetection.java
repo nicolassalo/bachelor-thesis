@@ -15,10 +15,7 @@ import java.io.BufferedWriter;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.ArrayList;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Scanner;
+import java.util.*;
 
 @Service
 public class PersonaDetection {
@@ -37,15 +34,16 @@ public class PersonaDetection {
 
     public void train(String lang) {
         try {
-            ConverterUtils.DataSource source1 = new ConverterUtils.DataSource("train.arff");
+            String fileName = "train-" + lang + ".arff";
+            writeFile(fileName, lang, reviewRepository.findByLang(lang));
+
+            ConverterUtils.DataSource source1 = new ConverterUtils.DataSource("train-" + lang + ".arff");
             train = source1.getDataSet();
             // setting class attribute if the data format does not provide this information
             // For example, the XRFF format saves the class attribute information as well
             if (train.classIndex() == -1)
                 train.setClassIndex(train.numAttributes() - 1);
 
-            System.out.println(personaRepository.findAllByOrderByIdAsc().size());
-            writeFile("de", reviewRepository.findByLang(lang));
 
             naiveBayes = new NaiveBayes();
             naiveBayes.buildClassifier(train);
@@ -55,9 +53,16 @@ public class PersonaDetection {
     }
 
 
-    public String detectPersona() {
+    public String detectPersona(List<Review> reviews) {
         try {
-            ConverterUtils.DataSource source2 = new ConverterUtils.DataSource("test.arff");
+            Iterator<Review> iterator = reviews.iterator();
+            while(iterator.hasNext()) {
+                iterator.next().setPersona(null);
+            }
+            String lang = reviews.get(0).getLang();
+            String fileName = "predict-" + lang + ".arff";
+            writeFile(fileName, lang, reviews);
+            ConverterUtils.DataSource source2 = new ConverterUtils.DataSource(fileName);
             Instances test = source2.getDataSet();
             // setting class attribute if the data format does not provide this information
             // For example, the XRFF format saves the class attribute information as well
@@ -74,30 +79,13 @@ public class PersonaDetection {
         }
     }
 
-    private void writeFile(String lang, List<Review> reviews) {
+    private void writeFile(String fileName, String lang, List<Review> reviews) {
         InputStream dataIn = null;
         try {
-            List<String> personaNames = new LinkedList<>();
-            for (Persona persona : personaRepository.findAll()) {
-                personaNames.add(persona.getName());
-            }
-            String personas = "{";
-            personas += String.join(",", personaNames) + "}";
-            BufferedWriter writer = new BufferedWriter(new FileWriter("train-" + lang + ".arff"));
-            writer.write("@RELATION reviews-" + lang + "\n\n");
-            writer.write("@ATTRIBUTE hasPicture             NUMERIC\n");
-            writer.write("@ATTRIBUTE hasVideo               NUMERIC\n");
-            writer.write("@ATTRIBUTE isPurchaseVerified     NUMERIC\n");
-            writer.write("@ATTRIBUTE length                 NUMERIC\n");
-            writer.write("@ATTRIBUTE rating                 NUMERIC\n");
-            writer.write("@ATTRIBUTE sentimentAnalysis      NUMERIC\n");
-            writer.write("@ATTRIBUTE consecutiveCaps        NUMERIC\n");
-            writer.write("@ATTRIBUTE distinctWordRatio      NUMERIC\n");
-            writer.write("@ATTRIBUTE averageWordLength      NUMERIC\n");
-            writer.write("@ATTRIBUTE numberOfLineBreaks     NUMERIC\n");
-            writer.write("@ATTRIBUTE numberOfQuestionMarks  NUMERIC\n");
-            writer.write("@ATTRIBUTE numberOfExclMarks      NUMERIC\n");
-            writer.write("@ATTRIBUTE persona                " + personas + "\n\n");
+            BufferedWriter writer = new BufferedWriter(new FileWriter(fileName));
+
+            writeBasis(writer, lang);
+
             writer.write("@DATA\n");
             for (Review review : reviews) {
                 Stats stats = calculateTextStats(review.getReviewText());
@@ -131,6 +119,30 @@ public class PersonaDetection {
             }
         }
     }
+
+    private void writeBasis(BufferedWriter writer, String lang) throws IOException {
+        List<String> personaNames = new LinkedList<>();
+        for (Persona persona : personaRepository.findAll()) {
+            personaNames.add(persona.getName());
+        }
+        String personas = "{";
+        personas += String.join(",", personaNames) + "}";
+        writer.write("@RELATION reviews-" + lang + "\n\n");
+        writer.write("@ATTRIBUTE hasPicture             NUMERIC\n");
+        writer.write("@ATTRIBUTE hasVideo               NUMERIC\n");
+        writer.write("@ATTRIBUTE isPurchaseVerified     NUMERIC\n");
+        writer.write("@ATTRIBUTE length                 NUMERIC\n");
+        writer.write("@ATTRIBUTE rating                 NUMERIC\n");
+        writer.write("@ATTRIBUTE sentimentAnalysis      NUMERIC\n");
+        writer.write("@ATTRIBUTE consecutiveCaps        NUMERIC\n");
+        writer.write("@ATTRIBUTE distinctWordRatio      NUMERIC\n");
+        writer.write("@ATTRIBUTE averageWordLength      NUMERIC\n");
+        writer.write("@ATTRIBUTE numberOfLineBreaks     NUMERIC\n");
+        writer.write("@ATTRIBUTE numberOfQuestionMarks  NUMERIC\n");
+        writer.write("@ATTRIBUTE numberOfExclMarks      NUMERIC\n");
+        writer.write("@ATTRIBUTE persona                " + personas + "\n\n");
+    }
+
     private Stats calculateTextStats(String text) {
         int questionMarks = StringUtils.countOccurrencesOf(text, "?");
         int exclMarks = StringUtils.countOccurrencesOf(text, "!");

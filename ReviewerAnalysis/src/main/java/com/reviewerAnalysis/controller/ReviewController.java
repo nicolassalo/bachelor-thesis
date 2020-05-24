@@ -215,7 +215,7 @@ public class ReviewController {
         // do not train model before having at least 2 examples per persona
         //trainSentimentModel();
         personaDetection.train("de");
-        personaDetection.detectPersona();
+        personaDetection.detectPersona(reviewRepository.findByLang("de"));
     }
 
     private void trainSentimentModel() {
