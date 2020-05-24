@@ -1,0 +1,20 @@
+@RELATION reviews-de
+
+@ATTRIBUTE hasPicture             NUMERIC
+@ATTRIBUTE hasVideo               NUMERIC
+@ATTRIBUTE isPurchaseVerified     NUMERIC
+@ATTRIBUTE length                 NUMERIC
+@ATTRIBUTE rating                 NUMERIC
+@ATTRIBUTE sentimentAnalysis      NUMERIC
+@ATTRIBUTE sentimentRatingOffset  NUMERIC
+@ATTRIBUTE consecutiveCaps        NUMERIC
+@ATTRIBUTE distinctWordRatio      NUMERIC
+@ATTRIBUTE averageWordLength      NUMERIC
+@ATTRIBUTE numberOfLineBreaks     NUMERIC
+@ATTRIBUTE numberOfQuestionMarks  NUMERIC
+@ATTRIBUTE numberOfExclMarks      NUMERIC
+@ATTRIBUTE persona                {Expert,Rager,Euphoric,Complainer,WaitingForMrPerfect,BeatingAroundTheBush,NoDemands}
+
+@DATA
+0,0,1,754,5,2,-3,0,0.7948717948717948,6.3418803418803416,4,0,0,?
+0,0,1,624,5,2,-3,0,0.7916666666666666,6.3125,6,0,0,?

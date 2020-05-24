@@ -43,6 +43,10 @@ public class PersonaResponse {
         return personasByLanguageProcessing;
     }
 
+    public Item getResult() {
+        return result;
+    }
+
     public static class Item {
 
         private String persona;

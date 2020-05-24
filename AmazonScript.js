@@ -89,6 +89,7 @@
         });
 
         function init(personas) {
+            $(".badges-genome-widget").html(""); // irregularity
             $("div[id^='customer_review'] .a-row.a-spacing-mini:nth-of-type(1)").each(function () {
                 var parent = $(this).parent("div[id^='customer_review']");
                 $(this).after(
@@ -96,6 +97,11 @@
                     "<select class='persona-select'></select> " +
                     "<a class='a-link-normal use-persona-single do-use'>Use</a> <a class='a-link-normal check-persona-single'>Check</a>"
                 );
+
+                if (parent.length == 0) {
+                    parent = $(this).parent().parent().parent();
+                }
+
 
                 for (var i = 0; i < personas.length; i++) {
                     parent.find(".persona-select").append('<option title="' + personas[i].description + '" value="' + personas[i].name + '">' + personas[i].name + '</option>');

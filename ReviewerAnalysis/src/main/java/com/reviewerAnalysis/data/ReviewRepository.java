@@ -6,6 +6,7 @@ import java.util.List;
 
 public interface ReviewRepository extends JpaRepository<Review, Long> {
     List<Review> findByLang(String lang);
+    List<Review> findByOrderByLengthAsc();
     long deleteByReviewTextAndRatingAndPassword(String text, int rating, String password);
 }
 

@@ -39,11 +39,9 @@ public class PersonaDetection {
 
             ConverterUtils.DataSource source1 = new ConverterUtils.DataSource("train-" + lang + ".arff");
             train = source1.getDataSet();
-            // setting class attribute if the data format does not provide this information
-            // For example, the XRFF format saves the class attribute information as well
-            if (train.classIndex() == -1)
+            if (train.classIndex() == -1) {
                 train.setClassIndex(train.numAttributes() - 1);
-
+            }
 
             naiveBayes = new NaiveBayes();
             naiveBayes.buildClassifier(train);
@@ -53,7 +51,7 @@ public class PersonaDetection {
     }
 
 
-    public String detectPersona(List<Review> reviews) {
+    public List<String> detectPersona(List<Review> reviews) {
         try {
             Iterator<Review> iterator = reviews.iterator();
             while(iterator.hasNext()) {
@@ -62,17 +60,24 @@ public class PersonaDetection {
             String lang = reviews.get(0).getLang();
             String fileName = "predict-" + lang + ".arff";
             writeFile(fileName, lang, reviews);
-            ConverterUtils.DataSource source2 = new ConverterUtils.DataSource(fileName);
-            Instances test = source2.getDataSet();
-            // setting class attribute if the data format does not provide this information
-            // For example, the XRFF format saves the class attribute information as well
-            if (test.classIndex() == -1)
-                test.setClassIndex(train.numAttributes() - 1);
-            double label = naiveBayes.classifyInstance(test.instance(0));
-            test.instance(0).setClassValue(label);
 
-            System.out.println(test.instance(0).stringValue(4));
-            return null;
+            ConverterUtils.DataSource source2 = new ConverterUtils.DataSource(fileName);
+            Instances prediction = source2.getDataSet();
+
+            if (prediction.classIndex() == -1) {
+                prediction.setClassIndex(train.numAttributes() - 1);
+            }
+
+            List<String> personas = new LinkedList<>();
+            for (int i = 0; i < prediction.numInstances(); i++) {
+                double label = naiveBayes.classifyInstance(prediction.instance(i));
+                prediction.instance(i).setClassValue(label);
+                String persona = prediction.instance(i).stringValue(prediction.numAttributes() - 1);
+                System.out.println(persona);
+                personas.add(persona);
+            }
+
+            return personas;
         } catch (Exception e) {
             e.printStackTrace();
             return null;
@@ -86,9 +91,9 @@ public class PersonaDetection {
 
             writeBasis(writer, lang);
 
-            writer.write("@DATA\n");
             for (Review review : reviews) {
                 Stats stats = calculateTextStats(review.getReviewText());
+                int sentimentRatingOffset = review.getSentimentAnalysis() - review.getRating();
                 String string = "";
                 string += (review.isHasPicture() ? 1 : 0) + ",";
                 string += (review.isHasVideo() ? 1 : 0) + ",";
@@ -96,6 +101,7 @@ public class PersonaDetection {
                 string += review.getLength() + ",";
                 string += review.getRating() + ",";
                 string += review.getSentimentAnalysis() + ",";
+                string += sentimentRatingOffset + ",";
                 string += stats.getConsecutiveCaps() + ",";
                 string += stats.getDistinctWordRatio() + ",";
                 string += stats.getAverageWordLength() + ",";
@@ -127,6 +133,7 @@ public class PersonaDetection {
         }
         String personas = "{";
         personas += String.join(",", personaNames) + "}";
+
         writer.write("@RELATION reviews-" + lang + "\n\n");
         writer.write("@ATTRIBUTE hasPicture             NUMERIC\n");
         writer.write("@ATTRIBUTE hasVideo               NUMERIC\n");
@@ -134,6 +141,7 @@ public class PersonaDetection {
         writer.write("@ATTRIBUTE length                 NUMERIC\n");
         writer.write("@ATTRIBUTE rating                 NUMERIC\n");
         writer.write("@ATTRIBUTE sentimentAnalysis      NUMERIC\n");
+        writer.write("@ATTRIBUTE sentimentRatingOffset  NUMERIC\n");
         writer.write("@ATTRIBUTE consecutiveCaps        NUMERIC\n");
         writer.write("@ATTRIBUTE distinctWordRatio      NUMERIC\n");
         writer.write("@ATTRIBUTE averageWordLength      NUMERIC\n");
@@ -141,6 +149,7 @@ public class PersonaDetection {
         writer.write("@ATTRIBUTE numberOfQuestionMarks  NUMERIC\n");
         writer.write("@ATTRIBUTE numberOfExclMarks      NUMERIC\n");
         writer.write("@ATTRIBUTE persona                " + personas + "\n\n");
+        writer.write("@DATA\n");
     }
 
     private Stats calculateTextStats(String text) {
