@@ -35,7 +35,7 @@ public class PersonaDetection {
     public void train(String lang) {
         try {
             String fileName = "train-" + lang + ".arff";
-            writeFile(fileName, lang, reviewRepository.findByLang(lang));
+            writeFile(fileName, lang, reviewRepository.findByLangAndIsForTraining(lang, true));
 
             ConverterUtils.DataSource source1 = new ConverterUtils.DataSource("train-" + lang + ".arff");
             train = source1.getDataSet();

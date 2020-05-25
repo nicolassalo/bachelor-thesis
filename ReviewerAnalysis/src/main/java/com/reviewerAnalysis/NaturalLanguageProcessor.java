@@ -25,7 +25,7 @@ public class NaturalLanguageProcessor {
     private NaturalLanguageProcessor() {}
 
     public void train(String lang) {
-        List<Review> reviews = reviewRepository.findByLang(lang);
+        List<Review> reviews = reviewRepository.findByLangAndIsForTraining(lang, true);
         List<String> trainingData = new LinkedList<>();
         for (Review review : reviews) {
             if (review.getPersona() != null) {

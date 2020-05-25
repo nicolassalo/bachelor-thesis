@@ -24,6 +24,9 @@ import java.util.stream.Collectors;
 public class ReviewController {
 
     @Autowired
+    ReviewerRepository reviewerRepository;
+
+    @Autowired
     ReviewRepository reviewRepository;
 
     @Autowired
@@ -46,7 +49,7 @@ public class ReviewController {
     @GetMapping("/trainModels/{lang}")
     public ResponseEntity<?> trainModels(@PathVariable String lang) {
         long start = System.currentTimeMillis();
-        int size = reviewRepository.findByLang(lang).size();
+        int size = reviewRepository.findByLangAndIsForTraining(lang, true).size();
 
         personaDetection.train(lang);
         naturalLanguageProcessor.train(lang);
@@ -141,9 +144,16 @@ public class ReviewController {
             if (review.getReviewText().length() < 10000) {
                 Language language = getLanguage(review.getReviewText());
                 if (language.getConfidence() > 0.95) {
-                    reviews.add(new Review(review.getTimestamp(), review.getTimeSincePreviousReview(), review.getRating(), review.getReviewText().length(), review.isHasPicture(), review.isHasVideo(), review.isPurchaseVerified(), getSentiment(review.getReviewText()), review.getReviewText(), language.getLang(), null, review.getPersona(), true));
+                    Review r = new Review(review.getTimestamp(), review.getTimeSincePreviousReview(), review.getRating(), review.getReviewText().length(), review.isHasPicture(), review.isHasVideo(), review.isPurchaseVerified(), getSentiment(review.getReviewText()), review.getReviewText(), language.getLang(), null, review.getPersona(), false);
+                    r = reviewRepository.save(r);
+                    System.out.println("new review id: " + r.getId());
+                    reviews.add(r);
                 }
             }
+        }
+
+        if (reviews.size() >= 10) {
+            reviewerRepository.save(new Reviewer(reviews));
         }
 
         List<String> wekaResults = personaDetection.detectPersona(reviews);
