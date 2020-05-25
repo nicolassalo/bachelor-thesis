@@ -27,6 +27,7 @@
 
     // wait for elements to be loaded
     setTimeout(function() {
+        $(".update-model").show();
         if (window.location.href.includes("gp/profile")) {
             // for when there are more than ten reviews
             if (getUrlParam("afterDataFetch") == "true") {
@@ -73,6 +74,22 @@
             // wait for new reviews to be loaded
             sentimentAnalysis();
         }, 1000);
+    });
+
+    $("body").append("<div style='position: fixed; bottom: 0; right: 0; background-color: white' class='update-model'><button>Update Model</button></div>");
+    $(".update-model").hide().click(function() {
+        $.ajax({
+            method: "GET",
+            url: baseUrl + "/reviewerAnalysis/trainModels/de",
+            success: function(response) {
+                console.log(response.message);
+                $(".update-model").hide();
+            },
+            error: function(error) {
+                alert(error.responseJSON.message);
+            },
+            contentType: "application/json;charset=utf-8"
+        });
     });
 
     function singleReviewPersonaDetection() {
@@ -134,6 +151,7 @@
                             success: function (response) {
                                 console.log("response", response);
                                 changeUseButton();
+                                $(".update-model").show();
                             },
                             error: function (error) {
                                 alert(error.responseJSON.message);

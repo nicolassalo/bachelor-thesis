@@ -46,12 +46,13 @@ public class ReviewController {
     @GetMapping("/trainModels/{lang}")
     public ResponseEntity<?> trainModels(@PathVariable String lang) {
         long start = System.currentTimeMillis();
+        int size = reviewRepository.findByLang(lang).size();
 
         personaDetection.train(lang);
         naturalLanguageProcessor.train(lang);
 
         long finish = System.currentTimeMillis();
-        return new ResponseEntity<>(new ResponseMessage("Trained models in " + (finish - start) + " ms."), HttpStatus.OK);
+        return new ResponseEntity<>(new ResponseMessage("Trained models with " + size + " reviews in " + (finish - start) + " ms."), HttpStatus.OK);
     }
 
     /**
