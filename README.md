@@ -1,8 +1,17 @@
-# Bachelor Thesis
+# Reviewer Analysis
 
-This is the repository for my bachelor thesis including programming code and written texts
+This is the repository for my bachelor thesis including programming code and written texts.
+
+The purpose of this software project is to categorize an author of amazon reviews into predefined personas using machine learning.
 
 ## Current progress
+
+Version 2 (25. May 2020)
+* Tampermonkey script for creating a user interface for using the API with real data
+* Main Software finished including
+    * APIs for adding and removing review training data
+    * 1 AI using weka library for detecting the persona for a given review
+    * 1 AI using natural language processing for detecting the persona for a given review
 
 Version 1 (01. April 2020):
 * AI with API for detecting languages english, german and 4 others
