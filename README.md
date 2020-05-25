@@ -28,6 +28,93 @@ Version 1 (01. April 2020):
 The following section explains how to use the API for language detection and for sentiment analysis.
 The API endpoints for adding and removing review training data is **password protected** and **not part of the service**.
 
+Every API is being used in the AmazonScript, which is located in the root of this repository.
+
+#### Reviewer analysis API
+
+* **URL**
+
+  https://api.ishift.de/reviewerAnalysis/
+
+* **Method:**
+  
+  `POST`
+  
+*  **URL Params**
+
+   None 
+
+* **Data Params**
+
+  `{reviews: [ReviewModel]}`
+  
+    The ReviewModel should contain the following keys
+    * `rating` a number from 1 to 5
+    * `reviewText` the html representation of the review text including \<br\> tags
+    * `timeSincePreviousReview` the time since the previous review in seconds
+    * `hasImage` true or false
+    * `hasVideo` true or false
+    * `isPurchaseVerified` true or false
+
+* **Success Response:**
+  
+  * **Code:** 200 <br />
+    **Content:** 
+    ```
+    {
+        "ignored": <0..n>,
+            "personasByReviewVariables": [
+                {
+                    "persona": string,
+                    "confidence": <0..1>
+                }
+            ],
+            "personasByLanguageProcessing": [
+                {
+                    "persona": string,
+                    "confidence": <0..1>
+                }
+            ],
+            "result": {
+                    "persona": string,
+                    "confidence": <0..1>
+            },
+            "activeness": <1..10>,
+            "elaborateness": <1..10>
+    }
+    ```
+ 
+
+* **Sample Call:**
+
+  ```
+  $.ajax({
+      method: "POST",
+      url: "https://api.ishift.de/reviewerAnalysis/",
+      data: JSON.stringify(
+          {
+              reviews: [
+                  {
+                      rating: 5,
+                      reviewText: "Habe Sockelleisten, welche ich mir aus Dachlatten gefräst 4x gestrichen.<br>2x mit diesen Pinseln, im Gegensatz zu den anderen Pinseln musste ich hier keine Borsten entfernen.<br>Bin sehr zufrieden mit den Teilen, bei der recht dickflüssigen, fast zähen Farbe waren sie top.",
+                      timeSincePreviousReview: 0,
+                      hasPicture: false,
+                      hasVideo: false,
+                      isPurchaseVerified: true
+                  }
+              ]
+          }
+      ),
+      success: function (response) {
+          console.log(response)
+      },
+      error: function (error) {
+          alert(error.responseJSON.message);
+      },
+      contentType: "application/json;charset=utf-8"
+  });
+  ``` 
+
 #### Sentiment analysis API
 
 * **URL**
@@ -72,7 +159,7 @@ The API endpoints for adding and removing review training data is **password pro
   ```
   $.ajax({
       method: "POST",
-      url: "https://api.ishift.de:8443/sentimentAnalysis/reviews/calcRating",
+      url: "https://api.ishift.de/sentimentAnalysis/reviews/calcRating",
       data: JSON.stringify({text: "Super Produkt"}),
       success: function (response) {
           alert("Rating should be " + response.rating);
@@ -154,7 +241,7 @@ The API endpoints for adding and removing review training data is **password pro
   ```
   $.ajax({
       method: "POST",
-      url: "http://api.ishift.de:8081/languageDetection/detect",
+      url: "http://api.ishift.de/languageDetection/detect",
       data: JSON.stringify({text: "Dieser Text ist deutsch"}),
       success: function (response) {
           console.log(response);
@@ -181,7 +268,7 @@ To make sure it worked, go to amazon.de and open the developer console. It shoul
 
 ## Built With
 
-* [Spring Boot](https://spring.io/projects/spring-boot) - The REST API framework used
+* [Spring Boot](https://spring.io/projects/spring-boot) - REST API Framework
 * [Maven](https://maven.apache.org/) - Dependency Management
 * [PostgreSQL](https://www.postgresql.org/) - Database Management
 
