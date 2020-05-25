@@ -50,7 +50,9 @@ public class Review {
 
     private String persona;
 
-    public Review(Long timestamp, Long timeSincePreviousReview, int rating, int length, boolean hasPicture, boolean hasVideo, boolean isPurchaseVerified, int sentimentAnalysis, String reviewText, String lang, String password, String persona) {
+    private boolean isForTraining; // for being able to save reviewers' reviews while also collecting training data
+
+    public Review(Long timestamp, Long timeSincePreviousReview, int rating, int length, boolean hasPicture, boolean hasVideo, boolean isPurchaseVerified, int sentimentAnalysis, String reviewText, String lang, String password, String persona, boolean isForTraining) {
         this.timestamp = timestamp;
         this.timeSincePreviousReview = timeSincePreviousReview;
         this.rating = rating;
@@ -63,6 +65,7 @@ public class Review {
         this.lang = lang;
         this.password = password;
         this.persona = persona;
+        this.isForTraining = isForTraining;
     }
 
     public Review() {}
@@ -165,6 +168,10 @@ public class Review {
 
     public void setLength(int length) {
         this.length = length;
+    }
+
+    public boolean isForTraining() {
+        return isForTraining;
     }
 }
 

@@ -73,7 +73,7 @@ public class ReviewController {
                 return new ResponseEntity<>(new ResponseMessage("Language might be " + language.getLang() + ", but only " + Math.round(language.getConfidence() * 100) + " % confident!"), HttpStatus.BAD_REQUEST);
             }
             System.out.println("hasPicture " + review.isHasPicture());
-            reviewRepository.save(new Review(review.getTimestamp(), review.getTimeSincePreviousReview(), review.getRating(), review.getReviewText().length(), review.isHasPicture(), review.isHasVideo(), review.isPurchaseVerified(), getSentiment(review.getReviewText()), review.getReviewText(), language.getLang(), password, review.getPersona()));
+            reviewRepository.save(new Review(review.getTimestamp(), review.getTimeSincePreviousReview(), review.getRating(), review.getReviewText().length(), review.isHasPicture(), review.isHasVideo(), review.isPurchaseVerified(), getSentiment(review.getReviewText()), review.getReviewText(), language.getLang(), password, review.getPersona(), true));
             return new ResponseEntity<>(new ResponseMessage("Review saved!"), HttpStatus.OK);
         } else {
             return new ResponseEntity<>(new ResponseMessage("Permission denied!"), HttpStatus.FORBIDDEN);
@@ -118,7 +118,7 @@ public class ReviewController {
             return new ResponseEntity<>(new ResponseMessage("Language might be " + language.getLang() + ", but only " + Math.round(language.getConfidence() * 100) + " % confident!"), HttpStatus.BAD_REQUEST);
         }
         List<Review> reviews = new LinkedList<>();
-        reviews.add(new Review(review.getTimestamp(), review.getTimeSincePreviousReview(), review.getRating(), review.getReviewText().length(), review.isHasPicture(), review.isHasVideo(), review.isPurchaseVerified(), getSentiment(review.getReviewText()), review.getReviewText(), language.getLang(), null, review.getPersona()));
+        reviews.add(new Review(review.getTimestamp(), review.getTimeSincePreviousReview(), review.getRating(), review.getReviewText().length(), review.isHasPicture(), review.isHasVideo(), review.isPurchaseVerified(), getSentiment(review.getReviewText()), review.getReviewText(), language.getLang(), null, review.getPersona(), true));
         List<String> wekaResult = personaDetection.detectPersona(reviews);
         List<String> nlpResult = new LinkedList<>();
         nlpResult.add(naturalLanguageProcessor.classifyNewReview(review.getReviewText()));
@@ -141,7 +141,7 @@ public class ReviewController {
             if (review.getReviewText().length() < 10000) {
                 Language language = getLanguage(review.getReviewText());
                 if (language.getConfidence() > 0.95) {
-                    reviews.add(new Review(review.getTimestamp(), review.getTimeSincePreviousReview(), review.getRating(), review.getReviewText().length(), review.isHasPicture(), review.isHasVideo(), review.isPurchaseVerified(), getSentiment(review.getReviewText()), review.getReviewText(), language.getLang(), null, review.getPersona()));
+                    reviews.add(new Review(review.getTimestamp(), review.getTimeSincePreviousReview(), review.getRating(), review.getReviewText().length(), review.isHasPicture(), review.isHasVideo(), review.isPurchaseVerified(), getSentiment(review.getReviewText()), review.getReviewText(), language.getLang(), null, review.getPersona(), true));
                 }
             }
         }
