@@ -176,8 +176,8 @@ public class ReviewController {
 
         int index = 0;
         double sum = 0;
-        double highestValue = probabilities[0];
-        for (int i = 1; i < probabilities.length; i++) {
+        double highestValue = 0;
+        for (int i = 0; i < probabilities.length; i++) {
             if (probabilities[i] > highestValue) {
                 index = i;
                 highestValue = probabilities[i];
