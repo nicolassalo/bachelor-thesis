@@ -1,31 +1,38 @@
 package com.reviewerAnalysis;
 
+import com.reviewerAnalysis.data.Review;
+import com.reviewerAnalysis.data.ReviewRepository;
 import opennlp.tools.doccat.DoccatModel;
 import opennlp.tools.doccat.DocumentCategorizerME;
 import opennlp.tools.doccat.DocumentSampleStream;
 import opennlp.tools.util.ObjectStream;
 import opennlp.tools.util.PlainTextByLineStream;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
 
 import java.io.*;
+import java.util.LinkedList;
 import java.util.List;
 
-
+@Service
 public class NaturalLanguageProcessor {
 
-    private static NaturalLanguageProcessor instance = null;
-
-    public static NaturalLanguageProcessor getInstance() {
-        if (instance == null) {
-            instance = new NaturalLanguageProcessor();
-        }
-        return instance;
-    }
-
-    private NaturalLanguageProcessor() {}
+    @Autowired
+    ReviewRepository reviewRepository;
 
     DoccatModel model;
 
-    public void trainModel(String lang, List<String> trainingData) {
+    private NaturalLanguageProcessor() {}
+
+    public void train(String lang) {
+        List<Review> reviews = reviewRepository.findByLang(lang);
+        List<String> trainingData = new LinkedList<>();
+        for (Review review : reviews) {
+            if (review.getPersona() != null) {
+                trainingData.add(review.getPersona() + "\t" + editReviewText(review.getReviewText()) + "\n");
+            }
+        }
+
         InputStream dataIn = null;
         try {
             BufferedWriter writer = new BufferedWriter(new FileWriter("persona-training-" + lang + ".txt"));
@@ -54,11 +61,20 @@ public class NaturalLanguageProcessor {
         }
     }
 
-    public int classifyNewReview(String text) {
+    public String classifyNewReview(String text) {
         DocumentCategorizerME myCategorizer = new DocumentCategorizerME(model);
-        double[] outcomes = myCategorizer.categorize(text);
-        String category = myCategorizer.getBestCategory(outcomes);
+        double[] outcomes = myCategorizer.categorize(editReviewText(text));
+        return myCategorizer.getBestCategory(outcomes);
+    }
 
-        return Integer.parseInt(category);
+    private String editReviewText(String text) {
+        return text
+                .replaceAll("\\„", " „ ")
+                .replaceAll("\\“", " “ ")
+                .replaceAll("\\.", " . ")
+                .replaceAll("\\!", " ! ")
+                .replaceAll("\\,", " , ")
+                .replaceAll("\\:", " : ")
+                .replaceAll("\\;", " ; ");
     }
 }

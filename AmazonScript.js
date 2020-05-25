@@ -17,7 +17,7 @@
     //var baseUrl = "http://localhost";
     moment.updateLocale('de', {
         monthsShort : [
-            "Jan", "Feb", "Mar", "Apr", "Mai", "Jun",
+            "Jan", "Feb", "März", "Apr", "Mai", "Jun",
             "Jul", "Aug", "Sep", "Okt", "Nov", "Dez"
         ]
     });
@@ -155,7 +155,8 @@
                         url: baseUrl + "/reviewerAnalysis/analyzeReview",
                         data: JSON.stringify(collectPersonaVariables(parent)),
                         success: function (response) {
-                            alert(response.message);
+                            console.log(response);
+                            alert("Detected persona: " + response.result.persona + ": " + Math.round(response.result.confidence * 100) + " %");
                         },
                         error: function (error) {
                             alert(error.responseJSON.message);

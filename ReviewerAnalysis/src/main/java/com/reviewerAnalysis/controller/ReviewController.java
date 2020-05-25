@@ -35,9 +35,23 @@ public class ReviewController {
     @Autowired
     PersonaDetection personaDetection;
 
+    @Autowired
+    NaturalLanguageProcessor naturalLanguageProcessor;
+
     @GetMapping("/personas")
-    public List<Persona> test() {
+    public List<Persona> getPersonas() {
         return personaRepository.findAllByOrderByIdAsc();
+    }
+
+    @GetMapping("/trainModels/{lang}")
+    public ResponseEntity<?> trainModels(@PathVariable String lang) {
+        long start = System.currentTimeMillis();
+
+        personaDetection.train(lang);
+        naturalLanguageProcessor.train(lang);
+
+        long finish = System.currentTimeMillis();
+        return new ResponseEntity<>(new ResponseMessage("Trained models in " + (finish - start) + " ms."), HttpStatus.OK);
     }
 
     /**
@@ -106,7 +120,7 @@ public class ReviewController {
         reviews.add(new Review(review.getTimestamp(), review.getTimeSincePreviousReview(), review.getRating(), review.getReviewText().length(), review.isHasPicture(), review.isHasVideo(), review.isPurchaseVerified(), getSentiment(review.getReviewText()), review.getReviewText(), language.getLang(), null, review.getPersona()));
         List<String> wekaResult = personaDetection.detectPersona(reviews);
         List<String> nlpResult = new LinkedList<>();
-        nlpResult.add(numberToPersona(NaturalLanguageProcessor.getInstance().classifyNewReview(editReviewText(review.getReviewText()))));
+        nlpResult.add(naturalLanguageProcessor.classifyNewReview(review.getReviewText()));
         List<PersonaResponse.Item> nlpItems = getItems(nlpResult);
         List<PersonaResponse.Item> wekaItems = getItems(wekaResult);
         PersonaResponse response = new PersonaResponse(0, nlpItems, wekaItems, calculateResult(nlpItems, wekaItems), calculateActiveness(reviews), calculateElaborateness(reviews));
@@ -135,7 +149,7 @@ public class ReviewController {
 
         List<String> nlpResults = new LinkedList<>();
         for (Review review : reviews) {
-            nlpResults.add(numberToPersona(NaturalLanguageProcessor.getInstance().classifyNewReview(editReviewText(review.getReviewText()))));
+            nlpResults.add(naturalLanguageProcessor.classifyNewReview(review.getReviewText()));
         }
 
         List<PersonaResponse.Item> nlpItems = getItems(nlpResults);
@@ -283,41 +297,10 @@ public class ReviewController {
         return languages[0];
     }
 
-    private String editReviewText(String text) {
-        return text
-                .replaceAll("\\„", " „ ")
-                .replaceAll("\\“", " “ ")
-                .replaceAll("\\.", " . ")
-                .replaceAll("\\!", " ! ")
-                .replaceAll("\\,", " , ")
-                .replaceAll("\\:", " : ")
-                .replaceAll("\\;", " ; ");
-    }
-
-    private int personaToNumber(String persona) {
-        return personaRepository.findByName(persona).get().getId().intValue();
-    }
-
-    private String numberToPersona(int number) {
-        return personaRepository.findById((long) number).get().getName();
-    }
-
     @EventListener(ApplicationReadyEvent.class)
     public void initialize() {
-        // do not train model before having at least 2 examples per persona
-        trainSentimentModel();
+        // do not train model before having at least 2 examples per persona (throws exception)
+        naturalLanguageProcessor.train("de");
         personaDetection.train("de");
-    }
-
-    private void trainSentimentModel() {
-        List<Review> reviews = reviewRepository.findByLang("de");
-        List<String> trainingData = new LinkedList<>();
-        for (Review review : reviews) {
-            if (review.getPersona() != null) {
-                trainingData.add(personaToNumber(review.getPersona()) + "\t" + editReviewText(review.getReviewText()) + "\n");
-            }
-        }
-
-        NaturalLanguageProcessor.getInstance().trainModel("de", trainingData);
     }
 }
