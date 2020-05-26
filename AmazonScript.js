@@ -13,7 +13,7 @@
 (function() {
     'use strict';
     console.log("Script by Nicolas Salomon is active");
-    var baseUrl = "https://ishift.de";
+    var baseUrl = "https://api.ishift.de";
     //var baseUrl = "http://localhost";
     moment.updateLocale('de', {
         monthsShort : [
