@@ -140,19 +140,24 @@ public class ReviewController {
     @PostMapping("/")
     public ResponseEntity<?> analyzeMultipleReviews(@Valid @RequestBody ReviewModelListWrapper reviewWrapper) {
         List<Review> reviews = new LinkedList<>();
+        boolean saveReviews = true;
         for (ReviewModel review : reviewWrapper.getReviews()) {
             if (review.getReviewText().length() < 10000) {
                 Language language = getLanguage(review.getReviewText());
                 if (language.getConfidence() > 0.95) {
                     Review r = new Review(review.getTimestamp(), review.getTimeSincePreviousReview(), review.getRating(), review.getReviewText().length(), review.isHasPicture(), review.isHasVideo(), review.isPurchaseVerified(), getSentiment(review.getReviewText()), review.getReviewText(), language.getLang(), null, review.getPersona(), false);
-                    r = reviewRepository.save(r);
+                    if (!reviewRepository.existsByReviewTextAndTimestampAndRatingAndIsForTraining(review.getReviewText(), review.getTimestamp(), review.getRating(), false)) {
+                        r = reviewRepository.save(r);
+                    } else {
+                        saveReviews = false;
+                    }
                     System.out.println("new review id: " + r.getId());
                     reviews.add(r);
                 }
             }
         }
 
-        if (reviews.size() >= 10) {
+        if (reviews.size() >= 10 && saveReviews) {
             reviewerRepository.save(new Reviewer(reviews));
         }
 

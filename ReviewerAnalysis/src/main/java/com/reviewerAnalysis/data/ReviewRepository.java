@@ -9,5 +9,6 @@ public interface ReviewRepository extends JpaRepository<Review, Long> {
     List<Review> findByLangAndIsForTraining(String lang, boolean forTraining);
     List<Review> findByOrderByLengthAsc();
     long deleteByReviewTextAndRatingAndPassword(String text, int rating, String password);
+    boolean existsByReviewTextAndTimestampAndRatingAndIsForTraining(String reviewText, long timestamp, int rating, boolean isForTraining);
 }
 
