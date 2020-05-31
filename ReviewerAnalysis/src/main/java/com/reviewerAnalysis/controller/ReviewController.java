@@ -144,7 +144,7 @@ public class ReviewController {
         for (ReviewModel review : reviewWrapper.getReviews()) {
             if (review.getReviewText().length() < 10000) {
                 Language language = getLanguage(review.getReviewText());
-                if (language.getConfidence() > 0.95) {
+                if (language.getLang().equals("de") && language.getConfidence() > 0.95) {
                     Review r = new Review(review.getTimestamp(), review.getTimeSincePreviousReview(), review.getRating(), review.getReviewText().length(), review.isHasPicture(), review.isHasVideo(), review.isPurchaseVerified(), getSentiment(review.getReviewText()), review.getReviewText(), language.getLang(), null, review.getPersona(), false);
                     if (!reviewRepository.existsByReviewTextAndTimestampAndRatingAndIsForTraining(review.getReviewText(), review.getTimestamp(), review.getRating(), false)) {
                         r = reviewRepository.save(r);

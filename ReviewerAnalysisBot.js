@@ -13,8 +13,22 @@
     'use strict';
     console.log("Scrape bot by Nicolas Salomon is active");
 
+    var running = false;
+
     if (localStorage.getItem("reviewerProfiles") == null) {
         localStorage.setItem("reviewerProfiles", JSON.stringify([]));
+    } else {
+        $("body").append("<div style='position: fixed; bottom: 0; left: 0; background-color: white' class='run-bot'><button>Run</button></div>");
+        $(".run-bot").click(function() {
+            if (running) {
+                running = false;
+                $(this).find("button").text("Run");
+            } else {
+                running = true;
+                $(this).find("button").text("Stop");
+                run();
+            }
+        });
     }
 
     if (getUrlParam("reviewerType") == "all_reviews") {
@@ -22,6 +36,19 @@
         $(".save-links").click(function() {
             collect();
         });
+    } else if (getUrlParam("isBot") == "true") {
+        setTimeout(function () {
+            if (getUrlParam("afterDataFetch") != "true") {
+                if (parseInt($($(".dashboard-desktop-stat-value")[1]).find("span").text()) >= 10) {
+                    $("a.check-persona")[0].click();
+                    console.log("more than ten")
+                } else {
+                    window.close();
+                }
+            } else {
+                window.close();
+            }
+        }, 3000) // wait for other script to do its part
     }
 
     var counter = 0;
@@ -53,6 +80,19 @@
     }
 
     function run() {
+        if (running) {
+            var links = JSON.parse(localStorage.getItem("reviewerProfiles"));
+            if (links.length > 0) {
+                var link = links[0];
+                links.shift();
+                localStorage.setItem("reviewerProfiles", JSON.stringify(links));
 
+                window.open(link + "&isBot=true", '_blank');
+
+                setTimeout(function() {
+                    run();
+                }, 20 * 1000);
+            }
+        }
     }
 })();
