@@ -46,6 +46,11 @@ public class ReviewController {
         return personaRepository.findAllByOrderByIdAsc();
     }
 
+    @GetMapping("/countReviews/{password}")
+    public ResponseEntity<?> countReviews(@PathVariable String password) {
+        return new ResponseEntity<>(new ResponseMessage("You already saved " + reviewRepository.findByPassword(password).size() + " reviews. Keep going!"), HttpStatus.OK);
+    }
+
     @GetMapping("/trainModels/{lang}")
     public ResponseEntity<?> trainModels(@PathVariable String lang) {
         long start = System.currentTimeMillis();

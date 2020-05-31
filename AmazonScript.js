@@ -384,4 +384,19 @@
         }
         return null;
     }
+
+    $("body").append("<div style='position: fixed; top: 0; right: 50%; background-color: white' class='count-my-reviews'><button>Count reviews</button></div>");
+    $(".count-my-reviews").click(function() {
+        $.ajax({
+            method: "GET",
+            url: baseUrl + "/reviewerAnalysis/countReviews/" + getPassword(),
+            success: function(response) {
+                alert(response.message);
+            },
+            error: function(error) {
+                alert(error.responseJSON.message);
+            },
+            contentType: "application/json;charset=utf-8"
+        });
+    });
 })();
