@@ -214,6 +214,15 @@
         var isPurchaseVerified = parent.find("div.review-format-strip span.a-text-bold").length > 0;
 
         var reviewText = parent.find(".review-text-content span").html();
+        if (reviewText.includes("video-block-")) { // comlicated code structure if review contains a video
+            reviewText = parent.find(".review-text-content span").text();
+            if (reviewText.includes("Install Flash Player")) {
+                reviewText = reviewText.substring(reviewText.indexOf("Install Flash Player") + "Install Flash Player".length, reviewText.length);
+                for (var i = 0; i < parent.find(".review-text-content span").html().split("<br>").length - 1; i++) {
+                    reviewText += "<br>"; // <br> tags or lost when using text() instead of html();
+                }
+            }
+        }
 
         var ratingElement = parent.find("i.review-rating");
         var ratingClass = ratingElement.attr("class");
