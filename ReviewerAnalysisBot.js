@@ -13,18 +13,16 @@
     'use strict';
     console.log("Scrape bot by Nicolas Salomon is active");
 
-    var running = false;
-
     if (localStorage.getItem("reviewerProfiles") == null) {
         localStorage.setItem("reviewerProfiles", JSON.stringify([]));
     } else {
         $("body").append("<div style='position: fixed; bottom: 0; left: 0; background-color: white' class='run-bot'><button>Run</button></div>");
         $(".run-bot").click(function() {
-            if (running) {
-                running = false;
+            if (localStorage.getItem("botRunning") == "true") {
+                localStorage.setItem("botRunning", false);
                 $(this).find("button").text("Run");
             } else {
-                running = true;
+                localStorage.setItem("botRunning", true);
                 $(this).find("button").text("Stop");
                 run();
             }
@@ -39,14 +37,13 @@
     } else if (getUrlParam("isBot") == "true") {
         setTimeout(function () {
             if (getUrlParam("afterDataFetch") != "true") {
-                if (parseInt($($(".dashboard-desktop-stat-value")[1]).find("span").text()) >= 10) {
+                if (parseInt($($(".dashboard-desktop-stat-value")[1]).find("span").text()) >= 10 && $("div#profile-at-card-container > .profile-at-card").length > 0) {
                     $("a.check-persona")[0].click();
-                    console.log("more than ten")
                 } else {
-                    window.close();
+                    run();
                 }
             } else {
-                window.close();
+                run();
             }
         }, 3000) // wait for other script to do its part
     }
@@ -80,18 +77,16 @@
     }
 
     function run() {
-        if (running) {
+        if (localStorage.getItem("botRunning") == "true") {
             var links = JSON.parse(localStorage.getItem("reviewerProfiles"));
             if (links.length > 0) {
                 var link = links[0];
                 links.shift();
                 localStorage.setItem("reviewerProfiles", JSON.stringify(links));
 
-                window.open(link + "&isBot=true", '_blank');
-
-                setTimeout(function() {
-                    run();
-                }, 20 * 1000);
+                window.location.replace(link + "&isBot=true");
+            } else {
+                alert("No profile links left");
             }
         }
     }
