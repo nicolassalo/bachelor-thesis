@@ -88,6 +88,8 @@
             } else {
                 alert("No profile links left");
             }
+        } else {
+            console.log("stop");
         }
     }
 })();

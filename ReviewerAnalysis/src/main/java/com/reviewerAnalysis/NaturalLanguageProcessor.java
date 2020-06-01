@@ -22,7 +22,61 @@ public class NaturalLanguageProcessor {
 
     DoccatModel model;
 
+    DoccatModel accuracyTestModel;
+
     private NaturalLanguageProcessor() {}
+
+    public double getAccuracy(String lang) {
+        long start = System.currentTimeMillis();
+        int correct = 0;
+        List<Review> reviews = reviewRepository.findByLangAndIsForTraining(lang, true);
+        for (int i = 0; i < reviews.size(); i++) {
+            List<String> trainingData = new LinkedList<>();
+            int counter = 0;
+            for (Review review : reviews) {
+                if (review.getPersona() != null && counter != i) {
+                    trainingData.add(review.getPersona() + "\t" + editReviewText(review.getReviewText()) + "\n");
+                }
+                counter++;
+            }
+
+            InputStream dataIn = null;
+            try {
+                BufferedWriter writer = new BufferedWriter(new FileWriter("nlp-accuracy-testing-" + lang + ".txt"));
+                for (String string : trainingData) {
+                    writer.write(string);
+                }
+                writer.close();
+
+                dataIn = new FileInputStream("nlp-accuracy-testing-" + lang + ".txt");
+                ObjectStream lineStream = new PlainTextByLineStream(dataIn, "UTF-8");
+                ObjectStream sampleStream = new DocumentSampleStream(lineStream);
+                // Specifies the minimum number of times a feature must be seen
+                int cutoff = 1;
+                int trainingIterations = 30;
+                accuracyTestModel = DocumentCategorizerME.train(lang, sampleStream, cutoff, trainingIterations);
+            } catch (IOException e) {
+                e.printStackTrace();
+            } finally {
+                if (dataIn != null) {
+                    try {
+                        dataIn.close();
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                }
+            }
+
+            DocumentCategorizerME myCategorizer = new DocumentCategorizerME(accuracyTestModel);
+            double[] outcomes = myCategorizer.categorize(editReviewText(reviews.get(i).getReviewText()));
+            if (myCategorizer.getBestCategory(outcomes).equals(reviews.get(i).getPersona())) {
+                correct++;
+            }
+        }
+        System.out.println("Time: " + (System.currentTimeMillis() - start) + " ms");
+        System.out.println("Accuracy: " + ((double) correct / reviews.size()));
+        return (double) correct / reviews.size();
+    }
 
     public void train(String lang) {
         List<Review> reviews = reviewRepository.findByLangAndIsForTraining(lang, true);

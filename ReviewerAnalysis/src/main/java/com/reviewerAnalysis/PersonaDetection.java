@@ -28,9 +28,75 @@ public class PersonaDetection {
 
     private NaiveBayes naiveBayes;
 
+    private NaiveBayes accuracyNaiveBayes;
+
     private Instances train;
 
+    private Instances accuracyTrain;
+
     private PersonaDetection() {}
+
+    public double getAccuracy(String lang) {
+        long start = System.currentTimeMillis();
+        int correct = 0;
+        List<Review> reviews = reviewRepository.findByLangAndIsForTraining(lang, true);
+        for (int i = 0; i < reviews.size(); i++) {
+            List<String> trainingData = new LinkedList<>();
+            int counter = 0;
+            try {
+                String fileName = "accuracy-test-" + lang + ".arff";
+                List<Review> list = reviewRepository.findByLangAndIsForTraining(lang, true);
+                list.remove(reviews.get(i));
+                writeFile(fileName, lang, list);
+
+                ConverterUtils.DataSource source1 = new ConverterUtils.DataSource("accuracy-test-" + lang + ".arff");
+                accuracyTrain = source1.getDataSet();
+                if (accuracyTrain.classIndex() == -1) {
+                    accuracyTrain.setClassIndex(accuracyTrain.numAttributes() - 1);
+                }
+
+                accuracyNaiveBayes = new NaiveBayes();
+                accuracyNaiveBayes.buildClassifier(accuracyTrain);
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+
+            try {
+
+                String fileName = "predict-accuracy-" + lang + ".arff";
+                List<Review> predictAccuracy = new LinkedList<>();
+                predictAccuracy.add(reviews.get(i));
+                writeFile(fileName, lang, predictAccuracy);
+
+                ConverterUtils.DataSource source2 = new ConverterUtils.DataSource(fileName);
+                Instances prediction = source2.getDataSet();
+
+                if (prediction.classIndex() == -1) {
+                    prediction.setClassIndex(accuracyTrain.numAttributes() - 1);
+                }
+
+                List<String> personas = new LinkedList<>();
+                for (int j = 0; j < prediction.numInstances(); j++) {
+                    double label = accuracyNaiveBayes.classifyInstance(prediction.instance(j));
+                    prediction.instance(j).setClassValue(label);
+                    String persona = prediction.instance(j).stringValue(prediction.numAttributes() - 1);
+                    System.out.println(persona);
+                    personas.add(persona);
+                }
+
+                if (personas.get(0).equals(reviews.get(i).getPersona())) {
+                    correct++;
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+                return 0;
+            }
+        }
+
+        System.out.println("Time: " + (System.currentTimeMillis() - start) + " ms");
+        System.out.println("Accuracy: " + ((double) correct / reviews.size()));
+        return (double) correct / reviews.size();
+    }
 
     public void train(String lang) {
         try {
