@@ -46,6 +46,17 @@ public class ReviewController {
         return personaRepository.findAllByOrderByIdAsc();
     }
 
+    @GetMapping("/accuracy/{lang}")
+    public ResponseEntity<?> getAccuracy(@PathVariable String lang) {
+        long start = System.currentTimeMillis();
+
+        double personaAccuracy = personaDetection.getAccuracy(lang);
+        double nlpAccuracy = naturalLanguageProcessor.getAccuracy(lang);
+
+        long finish = System.currentTimeMillis();
+        return new ResponseEntity<>(new ResponseMessage("Calculated an accuracy of " + personaAccuracy + " % for personaDetection and " + nlpAccuracy + " % for nlpDetection in " + (finish - start) + " ms."), HttpStatus.OK);
+    }
+
     @GetMapping("/countReviews/{password}")
     public ResponseEntity<?> countReviews(@PathVariable String password) {
         return new ResponseEntity<>(new ResponseMessage("You already saved " + reviewRepository.findByPassword(password).size() + " reviews. Keep going!"), HttpStatus.OK);
@@ -321,19 +332,8 @@ public class ReviewController {
     @Transactional
     @EventListener(ApplicationReadyEvent.class)
     public void initialize() {
-        for (Reviewer reviewer : reviewerRepository.findAll()) {
-            if (reviewer.getId() < 1400) {
-                for (Review review : reviewer.getReviews()) {
-                    reviewRepository.deleteById(review.getId());
-                }
-                reviewerRepository.deleteById(reviewer.getId());
-            }
-        }
-
         // do not train model before having at least 2 examples per persona (throws exception)
         naturalLanguageProcessor.train("de");
         personaDetection.train("de");
-        naturalLanguageProcessor.getAccuracy("de");
-        personaDetection.getAccuracy("de");
     }
 }
