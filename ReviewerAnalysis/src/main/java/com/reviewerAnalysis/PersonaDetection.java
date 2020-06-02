@@ -86,6 +86,8 @@ public class PersonaDetection {
 
                 if (personas.get(0).equals(reviews.get(i).getPersona())) {
                     correct++;
+                } else {
+                    System.err.println("Error! Expected " + reviews.get(i).getPersona() + ", got " + personas.get(0));
                 }
             } catch (Exception e) {
                 e.printStackTrace();
@@ -175,7 +177,6 @@ public class PersonaDetection {
                 string += stats.getQuestionMarks() + ",";
                 string += stats.getExclMarks() + ",";
                 string += review.getPersona() == null ? "?" : review.getPersona();
-                System.out.println(string);
                 writer.write(string + "\n");
             }
             writer.close();
