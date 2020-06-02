@@ -13,7 +13,8 @@
 @ATTRIBUTE numberOfLineBreaks     NUMERIC
 @ATTRIBUTE numberOfQuestionMarks  NUMERIC
 @ATTRIBUTE numberOfExclMarks      NUMERIC
+@ATTRIBUTE punctuationLetterRatio NUMERIC
 @ATTRIBUTE persona                {Expert,Rager,Euphoric,Complainer,WaitingForMrPerfect,BeatingAroundTheBush,NoDemands}
 
 @DATA
-0,0,1,690,5,5,0,0,0.822429906542056,6.308411214953271,5,0,1,Euphoric
+0,0,1,690,5,5,0,0,0.822429906542056,6.308411214953271,5,0,1,0.009345794392523364,Euphoric

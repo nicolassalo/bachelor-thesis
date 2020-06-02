@@ -18,7 +18,13 @@ public class Reviewer {
         this.reviews = reviews;
     }
 
+    public Reviewer() {}
+
     public List<Review> getReviews() {
         return reviews;
+    }
+
+    public Long getId() {
+        return this.id;
     }
 }

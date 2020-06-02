@@ -318,8 +318,18 @@ public class ReviewController {
         return languages[0];
     }
 
+    @Transactional
     @EventListener(ApplicationReadyEvent.class)
     public void initialize() {
+        for (Reviewer reviewer : reviewerRepository.findAll()) {
+            if (reviewer.getId() < 1400) {
+                for (Review review : reviewer.getReviews()) {
+                    reviewRepository.deleteById(review.getId());
+                }
+                reviewerRepository.deleteById(reviewer.getId());
+            }
+        }
+
         // do not train model before having at least 2 examples per persona (throws exception)
         naturalLanguageProcessor.train("de");
         personaDetection.train("de");

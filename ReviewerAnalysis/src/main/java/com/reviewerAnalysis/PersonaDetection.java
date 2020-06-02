@@ -176,6 +176,7 @@ public class PersonaDetection {
                 string += stats.getLineBreaks() + ",";
                 string += stats.getQuestionMarks() + ",";
                 string += stats.getExclMarks() + ",";
+                string += stats.getPunctuationLetterRatio() + ",";
                 string += review.getPersona() == null ? "?" : review.getPersona();
                 writer.write(string + "\n");
             }
@@ -215,6 +216,7 @@ public class PersonaDetection {
         writer.write("@ATTRIBUTE numberOfLineBreaks     NUMERIC\n");
         writer.write("@ATTRIBUTE numberOfQuestionMarks  NUMERIC\n");
         writer.write("@ATTRIBUTE numberOfExclMarks      NUMERIC\n");
+        writer.write("@ATTRIBUTE punctuationLetterRatio NUMERIC\n");
         writer.write("@ATTRIBUTE persona                " + personas + "\n\n");
         writer.write("@DATA\n");
     }
@@ -246,7 +248,8 @@ public class PersonaDetection {
 
         double averageWordLength = (double) text.length() / words.size();
         double distinctWordRatio = (double) uniqueWords.size() / words.size();
-        return new Stats(consecutiveCaps, exclMarks, questionMarks, lineBreaks, distinctWordRatio, averageWordLength);
+        double punctuationLetterRatio = (double) (questionMarks + exclMarks) / words.size();
+        return new Stats(consecutiveCaps, exclMarks, questionMarks, lineBreaks, distinctWordRatio, averageWordLength, punctuationLetterRatio);
     }
 
     private class Stats {
@@ -256,14 +259,16 @@ public class PersonaDetection {
         private int lineBreaks;
         private double distinctWordRatio;
         private double averageWordLength;
+        private double punctuationLetterRatio;
 
-        public Stats(int consecutiveCaps, int exclMarks, int questionMarks, int lineBreaks, double distinctWordRatio, double averageWordLength) {
+        public Stats(int consecutiveCaps, int exclMarks, int questionMarks, int lineBreaks, double distinctWordRatio, double averageWordLength, double punctuationLetterRatio) {
             this.consecutiveCaps = consecutiveCaps;
             this.exclMarks = exclMarks;
             this.questionMarks = questionMarks;
             this.lineBreaks = lineBreaks;
             this.distinctWordRatio = distinctWordRatio;
             this.averageWordLength = averageWordLength;
+            this.punctuationLetterRatio = punctuationLetterRatio;
         }
 
         public int getConsecutiveCaps() {
@@ -288,6 +293,10 @@ public class PersonaDetection {
 
         public int getLineBreaks() {
             return lineBreaks;
+        }
+
+        public double getPunctuationLetterRatio() {
+            return punctuationLetterRatio;
         }
     }
 }
