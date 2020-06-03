@@ -335,6 +335,7 @@ public class ReviewController {
         // do not train model before having at least 2 examples per persona (throws exception)
         naturalLanguageProcessor.train("de");
         personaDetection.train("de");
-        personaDetection.getAccuracy("de");
+        //personaDetection.getAccuracy("de");
+        naturalLanguageProcessor.getAccuracy("de");
     }
 }
