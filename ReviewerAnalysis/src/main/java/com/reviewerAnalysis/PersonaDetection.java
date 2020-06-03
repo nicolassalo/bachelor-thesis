@@ -7,10 +7,10 @@ import com.reviewerAnalysis.data.ReviewRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
+import weka.classifiers.Classifier;
 import weka.classifiers.bayes.BayesNet;
-import weka.classifiers.bayes.NaiveBayes;
+import weka.classifiers.trees.lmt.LogisticBase;
 import weka.core.Instances;
-import weka.core.Option;
 import weka.core.converters.ConverterUtils;
 
 import java.io.BufferedWriter;
@@ -28,19 +28,18 @@ public class PersonaDetection {
     @Autowired
     ReviewRepository reviewRepository;
 
-    private NaiveBayes naiveBayes;
-
-    private BayesNet bayesNet;
-
-    private NaiveBayes accuracyNaiveBayes;
+    private LogisticBase logisticBase;
 
     private Instances train;
 
     private Instances accuracyTrain;
 
-    private PersonaDetection() {}
+    private PersonaDetection() { }
 
-    public double getAccuracy(String lang) {
+    public double getAccuracy(String lang, Classifier classifier) {
+        if (classifier == null) {
+            classifier = new LogisticBase();
+        }
         long start = System.currentTimeMillis();
         int correct = 0;
         List<Review> reviews = reviewRepository.findByLangAndIsForTraining(lang, true);
@@ -59,8 +58,7 @@ public class PersonaDetection {
                     accuracyTrain.setClassIndex(accuracyTrain.numAttributes() - 1);
                 }
 
-                bayesNet = new BayesNet();
-                bayesNet.buildClassifier(accuracyTrain);
+                classifier.buildClassifier(accuracyTrain);
             } catch (Exception e) {
                 e.printStackTrace();
             }
@@ -81,10 +79,10 @@ public class PersonaDetection {
 
                 List<String> personas = new LinkedList<>();
                 for (int j = 0; j < prediction.numInstances(); j++) {
-                    double label = bayesNet.classifyInstance(prediction.instance(j));
+                    double label = classifier.classifyInstance(prediction.instance(j));
                     prediction.instance(j).setClassValue(label);
                     String persona = prediction.instance(j).stringValue(prediction.numAttributes() - 1);
-                    System.out.println(persona);
+                    //System.out.println(persona);
                     personas.add(persona);
                 }
 
@@ -115,13 +113,8 @@ public class PersonaDetection {
                 train.setClassIndex(train.numAttributes() - 1);
             }
 
-            naiveBayes = new NaiveBayes();
-            naiveBayes.buildClassifier(train);
-            System.out.println("Options:");
-            Iterator iterator = naiveBayes.listOptions().asIterator();
-            while (iterator.hasNext()) {
-                System.out.println(((Option) iterator.next()).description());
-            }
+            logisticBase = new LogisticBase();
+            logisticBase.buildClassifier(train);
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -147,7 +140,7 @@ public class PersonaDetection {
 
             List<String> personas = new LinkedList<>();
             for (int i = 0; i < prediction.numInstances(); i++) {
-                double label = naiveBayes.classifyInstance(prediction.instance(i));
+                double label = logisticBase.classifyInstance(prediction.instance(i));
                 prediction.instance(i).setClassValue(label);
                 String persona = prediction.instance(i).stringValue(prediction.numAttributes() - 1);
                 System.out.println(persona);
@@ -171,6 +164,7 @@ public class PersonaDetection {
             for (Review review : reviews) {
                 Stats stats = calculateTextStats(review.getReviewText());
                 int sentimentRatingOffset = review.getSentimentAnalysis() - review.getRating();
+                sentimentRatingOffset += 5; // Some classifiers cannot deal with negative numbers
                 String string = "";
                 string += (review.isHasPicture() ? 1 : 0) + ",";
                 string += (review.isHasVideo() ? 1 : 0) + ",";
