@@ -7,8 +7,10 @@ import com.reviewerAnalysis.data.ReviewRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
+import weka.classifiers.bayes.BayesNet;
 import weka.classifiers.bayes.NaiveBayes;
 import weka.core.Instances;
+import weka.core.Option;
 import weka.core.converters.ConverterUtils;
 
 import java.io.BufferedWriter;
@@ -27,6 +29,8 @@ public class PersonaDetection {
     ReviewRepository reviewRepository;
 
     private NaiveBayes naiveBayes;
+
+    private BayesNet bayesNet;
 
     private NaiveBayes accuracyNaiveBayes;
 
@@ -55,8 +59,8 @@ public class PersonaDetection {
                     accuracyTrain.setClassIndex(accuracyTrain.numAttributes() - 1);
                 }
 
-                accuracyNaiveBayes = new NaiveBayes();
-                accuracyNaiveBayes.buildClassifier(accuracyTrain);
+                bayesNet = new BayesNet();
+                bayesNet.buildClassifier(accuracyTrain);
             } catch (Exception e) {
                 e.printStackTrace();
             }
@@ -77,7 +81,7 @@ public class PersonaDetection {
 
                 List<String> personas = new LinkedList<>();
                 for (int j = 0; j < prediction.numInstances(); j++) {
-                    double label = accuracyNaiveBayes.classifyInstance(prediction.instance(j));
+                    double label = bayesNet.classifyInstance(prediction.instance(j));
                     prediction.instance(j).setClassValue(label);
                     String persona = prediction.instance(j).stringValue(prediction.numAttributes() - 1);
                     System.out.println(persona);
@@ -113,6 +117,11 @@ public class PersonaDetection {
 
             naiveBayes = new NaiveBayes();
             naiveBayes.buildClassifier(train);
+            System.out.println("Options:");
+            Iterator iterator = naiveBayes.listOptions().asIterator();
+            while (iterator.hasNext()) {
+                System.out.println(((Option) iterator.next()).description());
+            }
         } catch (Exception e) {
             e.printStackTrace();
         }

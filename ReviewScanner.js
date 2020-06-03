@@ -76,7 +76,7 @@
         }, 1000);
     });
 
-    $("body").append("<div style='position: fixed; bottom: 0; right: 0; background-color: white' class='update-model'><button>Update Model</button></div>");
+    $("body").append("<div style='position: fixed; bottom: 0; right: 0; background-color: white'><button class='calc-accuracy'>Calculate Accuracy</button><button class='update-model'>Update Model</button></div>");
     $(".update-model").hide().click(function() {
         $.ajax({
             method: "GET",
@@ -84,6 +84,19 @@
             success: function(response) {
                 console.log(response.message);
                 $(".update-model").hide();
+            },
+            error: function(error) {
+                alert(error.responseJSON.message);
+            },
+            contentType: "application/json;charset=utf-8"
+        });
+    });
+    $(".calc-accuracy").click(function() {
+        $.ajax({
+            method: "GET",
+            url: baseUrl + "/reviewerAnalysis/accuracy/de",
+            success: function(response) {
+                console.log(response.message);
             },
             error: function(error) {
                 alert(error.responseJSON.message);
