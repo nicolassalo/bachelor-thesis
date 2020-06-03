@@ -53,7 +53,7 @@ public class NaturalLanguageProcessor {
                 ObjectStream sampleStream = new DocumentSampleStream(lineStream);
                 // Specifies the minimum number of times a feature must be seen
                 int cutoff = 1;
-                int trainingIterations = 100;
+                int trainingIterations = 200;
                 accuracyTestModel = DocumentCategorizerME.train(lang, sampleStream, cutoff, trainingIterations);
             } catch (IOException e) {
                 e.printStackTrace();
