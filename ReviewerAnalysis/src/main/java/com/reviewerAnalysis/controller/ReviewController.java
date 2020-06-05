@@ -12,28 +12,20 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.client.RestTemplate;
 import weka.classifiers.Classifier;
+import weka.classifiers.bayes.BayesNet;
 import weka.classifiers.bayes.NaiveBayesMultinomial;
-import weka.classifiers.bayes.NaiveBayesMultinomialText;
 import weka.classifiers.bayes.NaiveBayesMultinomialUpdateable;
 import weka.classifiers.bayes.net.BIFReader;
 import weka.classifiers.bayes.net.BayesNetGenerator;
 import weka.classifiers.bayes.net.EditableBayesNet;
-import weka.classifiers.bayes.net.estimate.BayesNetEstimator;
 import weka.classifiers.functions.*;
 import weka.classifiers.lazy.IBk;
 import weka.classifiers.lazy.KStar;
 import weka.classifiers.lazy.LWL;
 import weka.classifiers.meta.*;
-import weka.classifiers.misc.SerializedClassifier;
-import weka.classifiers.pmml.consumer.*;
 import weka.classifiers.rules.*;
 import weka.classifiers.trees.*;
-import weka.classifiers.trees.lmt.LMTNode;
 import weka.classifiers.trees.lmt.LogisticBase;
-import weka.classifiers.trees.m5.M5Base;
-import weka.classifiers.trees.m5.PreConstructedLinearModel;
-import weka.classifiers.trees.m5.RuleNode;
-import weka.datagenerators.classifiers.classification.BayesNet;
 
 import javax.transaction.Transactional;
 import javax.validation.Valid;
@@ -69,15 +61,32 @@ public class ReviewController {
         return personaRepository.findAllByOrderByIdAsc();
     }
 
+    /*
+        Waiting for calculation results in a timeout.
+        Therefore returns latest calculations.
+     */
     @GetMapping("/accuracy/{lang}")
     public ResponseEntity<?> getAccuracy(@PathVariable String lang) {
-        long start = System.currentTimeMillis();
 
-        double personaAccuracy = personaDetection.getAccuracy(lang, null);
-        double nlpAccuracy = naturalLanguageProcessor.getAccuracy(lang);
+        Double personaAccuracy = personaDetection.getAccuracy(lang);
+        Double nlpAccuracy = naturalLanguageProcessor.getAccuracy(lang);
 
-        long finish = System.currentTimeMillis();
-        return new ResponseEntity<>(new ResponseMessage("Calculated an accuracy of " + personaAccuracy + " % for personaDetection and " + nlpAccuracy + " % for nlpDetection in " + (finish - start) + " ms."), HttpStatus.OK);
+        if (personaAccuracy < 0 || nlpAccuracy < 0) {
+            if (personaDetection.isCalculating() || naturalLanguageProcessor.isCalculating()) {
+                return new ResponseEntity<>(new ResponseMessage("Accuracies are being calculated. Please try again in a few minutes"), HttpStatus.OK);
+            } else {
+                new Thread(() -> {
+                    personaDetection.calcAccuracy(lang, null);
+                    naturalLanguageProcessor.calcAccuracy(lang);
+                }).start();
+                return new ResponseEntity<>(new ResponseMessage("Accuracy calculation started. Please try again in a few minutes"), HttpStatus.OK);
+            }
+        }
+        new Thread(() -> {
+            personaDetection.calcAccuracy(lang, null);
+            naturalLanguageProcessor.calcAccuracy(lang);
+        }).start();
+        return new ResponseEntity<>(new ResponseMessage(personaAccuracy + " % for personaDetection and " + nlpAccuracy + " % for nlpDetection"), HttpStatus.OK);
     }
 
     @GetMapping("/countReviews/{password}")
@@ -358,12 +367,55 @@ public class ReviewController {
         // do not train model before having at least 2 examples per persona (throws exception)
         naturalLanguageProcessor.train("de");
         personaDetection.train("de");
-        compareAlgorithms();
+        //compareAlgorithms();
     }
 
-    // TODO: Use numbers for class to test all classifiers
     private void compareAlgorithms() {
         List<Classifier> classifiers = new LinkedList<>();
+        classifiers.add(new SimpleLogistic()); // shared first place but slower (maybe because storage was getting full)
+        classifiers.add(new LogisticBase()); // shared first place but faster (maybe because storage was getting full)
+        classifiers.add(new BayesNet());
+        classifiers.add(new NaiveBayesMultinomial()); // cannot deal with negative numbers
+        classifiers.add(new NaiveBayesMultinomialUpdateable()); // cannot deal with negative numbers
+        classifiers.add(new AttributeSelectedClassifier());
+        classifiers.add(new DecisionTable());
+        classifiers.add(new FilteredClassifier());
+        classifiers.add(new IBk());
+        classifiers.add(new J48());
+        classifiers.add(new JRip());
+        classifiers.add(new KStar());
+        classifiers.add(new LMT());
+        classifiers.add(new Logistic());
+        classifiers.add(new MultiClassClassifier());
+        classifiers.add(new MultiClassClassifierUpdateable());
+        classifiers.add(new MultilayerPerceptron());
+        classifiers.add(new PART());
+        classifiers.add(new RandomForest());
+        classifiers.add(new RandomTree());
+        classifiers.add(new REPTree());
+        classifiers.add(new SMO());
+        classifiers.add(new Bagging());
+        classifiers.add(new BayesNetGenerator());
+        classifiers.add(new EditableBayesNet());
+        classifiers.add(new BIFReader());
+        classifiers.add(new ClassificationViaRegression());
+        classifiers.add(new LWL());
+        classifiers.add(new RandomCommittee());
+        classifiers.add(new RandomSubSpace());
+
+
+        /* worst
+        classifiers.add(new Stacking());
+        classifiers.add(new Vote());
+        classifiers.add(new NaiveBayesMultinomialText());
+        /classifiers.add(new CVParameterSelection());
+        classifiers.add(new AdaBoostM1());
+        classifiers.add(new ZeroR());
+        classifiers.add(new RandomizableFilteredClassifier());
+        classifiers.add(new OneR());
+        classifiers.add(new MultiScheme());
+        classifiers.add(new DecisionStump());
+         */
 
         //classifiers.add(new AdditiveRegression()); //Cannot handle multi-valued nominal class!
         //classifiers.add(new LinearRegression()); //Cannot handle multi-valued nominal class!
@@ -378,68 +430,29 @@ public class ReviewController {
         //classifiers.add(new CostSensitiveClassifier()); // file-read exception
         //classifiers.add(new SerializedClassifier()); // file-read exception
 
-        classifiers.add(new NaiveBayesMultinomial()); // cannot deal with negative numbers
-        classifiers.add(new NaiveBayesMultinomialUpdateable()); // cannot deal with negative numbers
-        classifiers.add(new AttributeSelectedClassifier());
-        classifiers.add(new DecisionStump());
-        classifiers.add(new DecisionTable());
-        classifiers.add(new FilteredClassifier());
-        classifiers.add(new IBk());
-        classifiers.add(new J48());
-        classifiers.add(new JRip());
-        classifiers.add(new KStar());
-        classifiers.add(new LMT());
-        classifiers.add(new Logistic());
-        classifiers.add(new LogisticBase()); // shared first place but faster (maybe because storage was getting full)
-        classifiers.add(new MultiClassClassifier());
-        classifiers.add(new MultiClassClassifierUpdateable());
-        classifiers.add(new MultilayerPerceptron());
-        classifiers.add(new MultiClassClassifierUpdateable());
-        classifiers.add(new MultiScheme());
-        classifiers.add(new MultilayerPerceptron());
-        classifiers.add(new MultiClassClassifier());
-        classifiers.add(new OneR());
-        classifiers.add(new PART());
-        classifiers.add(new RandomForest());
-        classifiers.add(new RandomizableFilteredClassifier());
-        classifiers.add(new RandomTree());
-        classifiers.add(new REPTree());
-        classifiers.add(new SimpleLogistic()); // shared first place but slower (maybe because storage was getting full)
-        classifiers.add(new SMO());
-        classifiers.add(new ZeroR());
-        classifiers.add(new Bagging());
-        classifiers.add(new AdaBoostM1());
-        classifiers.add(new BayesNetGenerator());
-        classifiers.add(new EditableBayesNet());
-        classifiers.add(new BIFReader());
-        classifiers.add(new ClassificationViaRegression());
-        classifiers.add(new CVParameterSelection());
-        classifiers.add(new LWL());
-        classifiers.add(new NaiveBayesMultinomialText());
-        classifiers.add(new RandomCommittee());
-        classifiers.add(new RandomSubSpace());
-        classifiers.add(new REPTree());
-        classifiers.add(new Stacking());
-        classifiers.add(new Vote());
-
         List<ClassifierAccuracy> accuracies = new LinkedList<>();
 
         for (Classifier classifier : classifiers) {
-            double accuracy = personaDetection.getAccuracy("de", classifier);
-            accuracies.add(new ClassifierAccuracy(accuracy, classifier));
+            System.out.println("using " + classifier.getClass().getName());
+            double[] result = personaDetection.calcAccuracy("de", classifier);
+            accuracies.add(new ClassifierAccuracy(result[0], result[1], classifier));
         }
 
+        accuracies.sort((c1, c2) -> (int) ((c2.getAccuracy() * 10000) - (c1.getAccuracy() * 10000)));
+
         for (ClassifierAccuracy classifierAccuracy : accuracies) {
-            System.out.println(classifierAccuracy.getClassifier().getClass().getName() + ": " + classifierAccuracy.getAccuracy());
+            System.out.println(classifierAccuracy.getAccuracy() + " % accuracy: " + classifierAccuracy.getClassifier().getClass().getName() + " - " + classifierAccuracy.getTime() + " ms");
         }
     }
 
     private class ClassifierAccuracy {
         private double accuracy;
+        private double time;
         private Classifier classifier;
 
-        public ClassifierAccuracy(double accuracy, Classifier classifier) {
+        public ClassifierAccuracy(double accuracy, double time, Classifier classifier) {
             this.accuracy = accuracy;
+            this.time = time;
             this.classifier = classifier;
         }
 
@@ -449,6 +462,10 @@ public class ReviewController {
 
         public double getAccuracy() {
             return accuracy;
+        }
+
+        public double getTime() {
+            return time;
         }
     }
 }

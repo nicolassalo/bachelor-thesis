@@ -34,11 +34,27 @@ public class PersonaDetection {
 
     private Instances accuracyTrain;
 
-    private PersonaDetection() { }
+    private Map<String, Double> accuracies;
+    private boolean isCalculating;
 
-    public double getAccuracy(String lang, Classifier classifier) {
+    private PersonaDetection() {
+        accuracies = new HashMap<>();
+        isCalculating = false;
+    }
+
+    public boolean isCalculating() {
+        return isCalculating;
+    }
+
+    public double getAccuracy(String lang) {
+        return accuracies.get(lang) == null ? -1.0 : accuracies.get(lang);
+    }
+
+    public double[] calcAccuracy(String lang, Classifier classifier) {
+        isCalculating = true;
+        Classifier defaultClassifier = new LogisticBase();
         if (classifier == null) {
-            classifier = new LogisticBase();
+            classifier = defaultClassifier;
         }
         long start = System.currentTimeMillis();
         int correct = 0;
@@ -93,13 +109,16 @@ public class PersonaDetection {
                 }
             } catch (Exception e) {
                 e.printStackTrace();
-                return 0;
+                isCalculating = false;
+                return new double[]{0,0};
             }
         }
 
-        System.out.println("Time: " + (System.currentTimeMillis() - start) + " ms");
-        System.out.println("Accuracy: " + ((double) correct / reviews.size()));
-        return (double) correct / reviews.size();
+        if (defaultClassifier == classifier) {
+            accuracies.put(lang, (double) correct / reviews.size());
+        }
+        isCalculating = false;
+        return new double[]{(double) correct / reviews.size(), System.currentTimeMillis() - start};
     }
 
     public void train(String lang) {

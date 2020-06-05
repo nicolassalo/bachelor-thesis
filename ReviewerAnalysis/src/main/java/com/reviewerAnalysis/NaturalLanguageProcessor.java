@@ -11,8 +11,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.io.*;
+import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 
 @Service
 public class NaturalLanguageProcessor {
@@ -24,9 +26,23 @@ public class NaturalLanguageProcessor {
 
     DoccatModel accuracyTestModel;
 
-    private NaturalLanguageProcessor() {}
+    private Map<String, Double> accuracies;
+    private boolean isCalculating;
+
+    private NaturalLanguageProcessor() {
+        accuracies = new HashMap<>();
+    }
+
+    public boolean isCalculating() {
+        return isCalculating;
+    }
 
     public double getAccuracy(String lang) {
+        return accuracies.get(lang) == null ? -1.0 : accuracies.get(lang);
+    }
+
+    public double calcAccuracy(String lang) {
+        isCalculating = true;
         long start = System.currentTimeMillis();
         int correct = 0;
         List<Review> reviews = reviewRepository.findByLangAndIsForTraining(lang, true);
@@ -56,6 +72,7 @@ public class NaturalLanguageProcessor {
                 int trainingIterations = 100;
                 accuracyTestModel = DocumentCategorizerME.train(lang, sampleStream, cutoff, trainingIterations);
             } catch (IOException e) {
+                isCalculating = false;
                 e.printStackTrace();
             } finally {
                 if (dataIn != null) {
@@ -73,9 +90,12 @@ public class NaturalLanguageProcessor {
                 correct++;
             }
         }
+        double accuracy = (double) correct / reviews.size();
+        accuracies.put(lang, accuracy);
         System.out.println("Time: " + (System.currentTimeMillis() - start) + " ms");
-        System.out.println("Accuracy: " + ((double) correct / reviews.size()));
-        return (double) correct / reviews.size();
+        System.out.println("Accuracy: " + accuracy);
+        isCalculating = false;
+        return accuracy;
     }
 
     public void train(String lang) {
