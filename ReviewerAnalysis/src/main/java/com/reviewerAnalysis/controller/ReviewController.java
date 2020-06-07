@@ -213,22 +213,31 @@ public class ReviewController {
 
         if (reviews.size() >= 10 && saveReviews) {
             reviewerRepository.save(new Reviewer(reviews));
+            System.out.println("saved new reviewer");
         }
 
         List<String> wekaResults = personaDetection.detectPersona(reviews);
+        System.out.println("wekaResults ready");
 
         List<String> nlpResults = new LinkedList<>();
         for (Review review : reviews) {
             nlpResults.add(naturalLanguageProcessor.classifyNewReview(review.getReviewText()));
         }
+        System.out.println("nlpResults ready");
+
+        List<PersonaResponse.Item> wekaItems = getItems(wekaResults);
+        System.out.println("wekaItems ready");
 
         List<PersonaResponse.Item> nlpItems = getItems(nlpResults);
-        List<PersonaResponse.Item> wekaItems = getItems(wekaResults);
+        System.out.println("nlpItems ready");
+
         PersonaResponse response = new PersonaResponse(reviewWrapper.getReviews().size() - reviews.size(), nlpItems, wekaItems, calculateResult(nlpItems, wekaItems), calculateActiveness(reviews),calculateElaborateness(reviews));
+        System.out.println("response created");
         return new ResponseEntity<>(response, HttpStatus.OK);
     }
 
     private PersonaResponse.Item calculateResult(List<PersonaResponse.Item> nlpResults, List<PersonaResponse.Item> wekaResults) {
+        System.out.println("calculating result");
         List<Stats> stats = statsRepository.findByLang((String) request.getSession().getAttribute("lang"));
         double wekaRelevanceFactor = 2; // how much more weight is on the wekaResults
         double nlpRelevanecFactor = 1; // how much more weight is on the nlpResults
@@ -288,7 +297,7 @@ public class ReviewController {
             }
             sum += probabilities[i];
         }
-
+        System.out.println("done calculating result");
         return new PersonaResponse.Item(personaRepository.findById((long) index + 1).get().getName(), highestValue / sum);
     }
 
@@ -297,6 +306,7 @@ public class ReviewController {
         Every average review interval lower than the lowest is ranked 0
      */
     private int calculateActiveness(List<Review> reviews) {
+        System.out.println("calculating activeness");
         int highest = 3600 * 24; // one day
         int lowest = 3600 * 4 * 365 * 5; // 5 years
         int diff = lowest - highest;
@@ -320,13 +330,16 @@ public class ReviewController {
             } else if (result < 0) {
                 result = 0;
             }
+            System.out.println("done calculating activeness");
             return result;
         } else {
+            System.out.println("done calculating activeness");
             return 0;
         }
     }
 
     private int calculateElaborateness(List<Review> reviews) {
+        System.out.println("calculating elaborateness");
         List<Review> allReviews = reviewRepository.findByOrderByLengthAsc();
         int sum = 0;
         for (Review review : reviews) {
@@ -346,11 +359,7 @@ public class ReviewController {
         System.out.println("Counter " + counter);
 
         double ratio = (double) counter / allReviews.size();
-        int result = (int) Math.ceil((ratio * 10));
-        if (result > 10) {
-            result = 10;
-        }
-        return result;
+        return (int) Math.round((ratio * 10));
     }
 
     private List<PersonaResponse.Item> getItems(List<String> results) {
