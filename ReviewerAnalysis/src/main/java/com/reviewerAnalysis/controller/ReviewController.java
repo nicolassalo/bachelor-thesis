@@ -6,11 +6,9 @@ import com.reviewerAnalysis.data.*;
 import com.reviewerAnalysis.model.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
-import org.springframework.context.annotation.Scope;
 import org.springframework.context.event.EventListener;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.stereotype.Component;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.client.RestTemplate;
 import weka.classifiers.Classifier;
@@ -76,30 +74,20 @@ public class ReviewController {
      */
     @GetMapping("/accuracy/{lang}")
     public ResponseEntity<?> getAccuracy(@PathVariable String lang) {
-
-        Double personaAccuracy = personaDetection.getAccuracy(lang);
-        Double nlpAccuracy = naturalLanguageProcessor.getAccuracy(lang);
-
-        if (personaAccuracy < 0 || nlpAccuracy < 0) {
-            if (personaDetection.isCalculating() || naturalLanguageProcessor.isCalculating()) {
-                return new ResponseEntity<>(new ResponseMessage("Accuracies are being calculated. Please try again in a few minutes"), HttpStatus.OK);
-            } else {
-                new Thread(() -> {
-                    personaDetection.calcAccuracy(lang, null);
-                    naturalLanguageProcessor.calcAccuracy(lang);
-                }).start();
-                return new ResponseEntity<>(new ResponseMessage("Accuracy calculation started. Please try again in a few minutes"), HttpStatus.OK);
-            }
+        if (!personaDetection.isCalculating() && !naturalLanguageProcessor.isCalculating()) {
+            new Thread(() -> {
+                Result wekaResult = personaDetection.calcAccuracy(lang, null);
+                Result nlpResult = naturalLanguageProcessor.calcAccuracy(lang);
+                statsRepository.deleteAll();
+                statsRepository.save(new Stats(lang, wekaResult.getAccuracy(), nlpResult.getAccuracy(), wekaResult.getPersonaAccuracies(), nlpResult.getPersonaAccuracies()));
+            }).start();
         }
-        new Thread(() -> {
-            if (!personaDetection.isCalculating()) {
-                personaDetection.calcAccuracy(lang, null);
-            }
-            if (!naturalLanguageProcessor.isCalculating()) {
-                naturalLanguageProcessor.calcAccuracy(lang);
-            }
-        }).start();
-        return new ResponseEntity<>(new ResponseMessage(personaAccuracy + " for personaDetection and " + nlpAccuracy + " for nlpDetection"), HttpStatus.OK);
+        List<Stats> stats = statsRepository.findAll();
+        if (stats.size() > 0) {
+            return new ResponseEntity<>(new ResponseMessage(stats.get(0).getWekaAccuracy() + " for personaDetection and " + stats.get(0).getNlpAccuracy() + " for nlpDetection"), HttpStatus.OK);
+        } else {
+            return new ResponseEntity<>(new ResponseMessage("Accuracies are being calculated. Please try again in a few minutes"), HttpStatus.OK);
+        }
     }
 
     @GetMapping("/countReviews/{password}")
@@ -241,7 +229,7 @@ public class ReviewController {
     }
 
     private PersonaResponse.Item calculateResult(List<PersonaResponse.Item> nlpResults, List<PersonaResponse.Item> wekaResults) {
-        List<Stats> stats = statsRepository.findAll();
+        List<Stats> stats = statsRepository.findByLang((String) request.getSession().getAttribute("lang"));
         double wekaRelevanceFactor = 2; // how much more weight is on the wekaResults
         double nlpRelevanecFactor = 1; // how much more weight is on the nlpResults
         double[] probabilities = new double[personaRepository.findAll().size()];
@@ -345,7 +333,7 @@ public class ReviewController {
             sum += review.getLength();
         }
 
-        sum /= reviews.size(); // average
+        sum /= reviews.size(); // average length of reviewer's reviews
 
         int counter = 1;
         for (Review review : allReviews) {
@@ -424,8 +412,8 @@ public class ReviewController {
         //compareAlgorithms();
         Result wekaResult = personaDetection.calcAccuracy("de", null);
         Result nlpResult = naturalLanguageProcessor.calcAccuracy("de");
-        statsRepository.deleteAll();
-        statsRepository.save(new Stats(wekaResult.getAccuracy(), nlpResult.getAccuracy(), wekaResult.getPersonaAccuracies(), nlpResult.getPersonaAccuracies()));
+        statsRepository.deleteByLang("de");
+        statsRepository.save(new Stats("de", wekaResult.getAccuracy(), nlpResult.getAccuracy(), wekaResult.getPersonaAccuracies(), nlpResult.getPersonaAccuracies()));
     }
 
     private void compareAlgorithms() {

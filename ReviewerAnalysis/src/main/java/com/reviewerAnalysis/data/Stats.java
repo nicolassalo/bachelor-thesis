@@ -10,6 +10,8 @@ public class Stats {
     @GeneratedValue(strategy = GenerationType.AUTO)
     private Long id;
 
+    private String lang;
+
     private double wekaAccuracy;
 
     private double nlpAccuracy;
@@ -26,7 +28,8 @@ public class Stats {
     @Column(name="accuracy")
     private Map<String, Double> nlpPersonaAccuracies;
 
-    public Stats(double wekaAccuracy, double nlpAccuracy, Map<String, Double> personaAccuracies, Map<String, Double> nlpPersonaAccuracies) {
+    public Stats(String lang, double wekaAccuracy, double nlpAccuracy, Map<String, Double> personaAccuracies, Map<String, Double> nlpPersonaAccuracies) {
+        this.lang = lang;
         this.wekaAccuracy = wekaAccuracy;
         this.nlpAccuracy = nlpAccuracy;
         this.wekaPersonaAccuracies = personaAccuracies;
@@ -37,6 +40,10 @@ public class Stats {
 
     public Long getId() {
         return id;
+    }
+
+    public String getLang() {
+        return lang;
     }
 
     public double getWekaAccuracy() {
