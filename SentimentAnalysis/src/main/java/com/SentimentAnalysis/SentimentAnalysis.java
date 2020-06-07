@@ -1,10 +1,13 @@
 package com.SentimentAnalysis;
 
+import opennlp.tools.doccat.DoccatFactory;
 import opennlp.tools.doccat.DoccatModel;
 import opennlp.tools.doccat.DocumentCategorizerME;
 import opennlp.tools.doccat.DocumentSampleStream;
+import opennlp.tools.util.MarkableFileInputStreamFactory;
 import opennlp.tools.util.ObjectStream;
 import opennlp.tools.util.PlainTextByLineStream;
+import opennlp.tools.util.TrainingParameters;
 
 import java.io.*;
 import java.util.List;
@@ -27,7 +30,7 @@ public class SentimentAnalysis {
 
 
     public void trainModel(String lang, List<String> trainingData) {
-        InputStream dataIn = null;
+        MarkableFileInputStreamFactory dataIn = null;
         try {
             BufferedWriter writer = new BufferedWriter(new FileWriter("sentiment-training-" + lang + ".txt"));
             for (String string : trainingData) {
@@ -35,29 +38,21 @@ public class SentimentAnalysis {
             }
             writer.close();
 
-            dataIn = new FileInputStream("sentiment-training-" + lang + ".txt");
+            dataIn = new MarkableFileInputStreamFactory(new File("sentiment-training-" + lang + ".txt"));
             ObjectStream lineStream = new PlainTextByLineStream(dataIn, "UTF-8");
             ObjectStream sampleStream = new DocumentSampleStream(lineStream);
-            // Specifies the minimum number of times a feature must be seen
-            int cutoff = 1;
-            int trainingIterations = 30;
-            model = DocumentCategorizerME.train(lang, sampleStream, cutoff, trainingIterations);
+            TrainingParameters params = TrainingParameters.defaultParams();
+            params.put(TrainingParameters.ITERATIONS_PARAM, Integer.toString(100));
+            params.put(TrainingParameters.CUTOFF_PARAM, Integer.toString(1));
+            model = DocumentCategorizerME.train(lang, sampleStream, params, new DoccatFactory());
         } catch (IOException e) {
             e.printStackTrace();
-        } finally {
-            if (dataIn != null) {
-                try {
-                    dataIn.close();
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-            }
         }
     }
 
     public int classifyNewReview(String text) {
         DocumentCategorizerME myCategorizer = new DocumentCategorizerME(model);
-        double[] outcomes = myCategorizer.categorize(text);
+        double[] outcomes = myCategorizer.categorize(text.split(" "));
         String category = myCategorizer.getBestCategory(outcomes);
 
         return Integer.parseInt(category);

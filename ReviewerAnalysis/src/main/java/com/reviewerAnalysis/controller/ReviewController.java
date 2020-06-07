@@ -124,7 +124,6 @@ public class ReviewController {
             if (language.getConfidence() < 0.95) {
                 return new ResponseEntity<>(new ResponseMessage("Language might be " + language.getLang() + ", but only " + Math.round(language.getConfidence() * 100) + " % confident!"), HttpStatus.BAD_REQUEST);
             }
-            System.out.println("hasPicture " + review.isHasPicture());
             reviewRepository.save(new Review(review.getTimestamp(), review.getTimeSincePreviousReview(), review.getRating(), review.getReviewText().length(), review.isHasPicture(), review.isHasVideo(), review.isPurchaseVerified(), getSentiment(review.getReviewText()), review.getReviewText(), language.getLang(), password, review.getPersona(), true));
             return new ResponseEntity<>(new ResponseMessage("Review saved!"), HttpStatus.OK);
         } else {
@@ -417,7 +416,6 @@ public class ReviewController {
         // do not train model before having at least 2 examples per persona (throws exception)
         naturalLanguageProcessor.train("de");
         personaDetection.train("de");
-        //System.out.println(personaDetection.calcAccuracy("de", null)[0]);
         //compareAlgorithms();
         Result wekaResult = personaDetection.calcAccuracy("de", null);
         Result nlpResult = naturalLanguageProcessor.calcAccuracy("de");

@@ -5,11 +5,14 @@ import com.reviewerAnalysis.data.Persona;
 import com.reviewerAnalysis.data.PersonaRepository;
 import com.reviewerAnalysis.data.Review;
 import com.reviewerAnalysis.data.ReviewRepository;
-import opennlp.tools.doccat.DoccatModel;
-import opennlp.tools.doccat.DocumentCategorizerME;
-import opennlp.tools.doccat.DocumentSampleStream;
-import opennlp.tools.util.ObjectStream;
-import opennlp.tools.util.PlainTextByLineStream;
+import opennlp.tools.doccat.*;
+import opennlp.tools.ml.maxent.GISTrainer;
+import opennlp.tools.ml.maxent.quasinewton.QNTrainer;
+import opennlp.tools.ml.naivebayes.NaiveBayesEvalParameters;
+import opennlp.tools.ml.naivebayes.NaiveBayesTrainer;
+import opennlp.tools.ml.perceptron.PerceptronTrainer;
+import opennlp.tools.stemmer.snowball.SnowballStemmer;
+import opennlp.tools.util.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -68,7 +71,7 @@ public class NaturalLanguageProcessor {
                 counter++;
             }
 
-            InputStream dataIn = null;
+            MarkableFileInputStreamFactory dataIn = null;
             try {
                 BufferedWriter writer = new BufferedWriter(new FileWriter("nlp-accuracy-testing-" + lang + ".txt"));
                 for (String string : trainingData) {
@@ -76,28 +79,22 @@ public class NaturalLanguageProcessor {
                 }
                 writer.close();
 
-                dataIn = new FileInputStream("nlp-accuracy-testing-" + lang + ".txt");
+                dataIn = new MarkableFileInputStreamFactory(new File("nlp-accuracy-testing-" + lang + ".txt"));
                 ObjectStream lineStream = new PlainTextByLineStream(dataIn, "UTF-8");
                 ObjectStream sampleStream = new DocumentSampleStream(lineStream);
-                // Specifies the minimum number of times a feature must be seen
-                int cutoff = 1;
-                int trainingIterations = 100;
-                accuracyTestModel = DocumentCategorizerME.train(lang, sampleStream, cutoff, trainingIterations);
+                TrainingParameters params = TrainingParameters.defaultParams();
+                params.put(TrainingParameters.ITERATIONS_PARAM, Integer.toString(100));
+                params.put(TrainingParameters.CUTOFF_PARAM, Integer.toString(1));
+
+                accuracyTestModel = DocumentCategorizerME.train(lang, sampleStream, params, new DoccatFactory());
+
             } catch (IOException e) {
                 isCalculating = false;
                 e.printStackTrace();
-            } finally {
-                if (dataIn != null) {
-                    try {
-                        dataIn.close();
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                    }
-                }
             }
 
             DocumentCategorizerME myCategorizer = new DocumentCategorizerME(accuracyTestModel);
-            double[] outcomes = myCategorizer.categorize(editReviewText(reviews.get(i).getReviewText()));
+            double[] outcomes = myCategorizer.categorize(editReviewText(reviews.get(i).getReviewText()).split(" "));
             if (myCategorizer.getBestCategory(outcomes).equals(reviews.get(i).getPersona())) {
                 correct++;
                 correctCounter.put(reviews.get(i).getPersona(), correctCounter.get(reviews.get(i).getPersona()) + 1);
@@ -131,7 +128,7 @@ public class NaturalLanguageProcessor {
             }
         }
 
-        InputStream dataIn = null;
+        MarkableFileInputStreamFactory dataIn = null;
         try {
             BufferedWriter writer = new BufferedWriter(new FileWriter("persona-training-" + lang + ".txt"));
             for (String string : trainingData) {
@@ -139,29 +136,24 @@ public class NaturalLanguageProcessor {
             }
             writer.close();
 
-            dataIn = new FileInputStream("persona-training-" + lang + ".txt");
+            dataIn = new MarkableFileInputStreamFactory(new File("persona-training-" + lang + ".txt"));
             ObjectStream lineStream = new PlainTextByLineStream(dataIn, "UTF-8");
             ObjectStream sampleStream = new DocumentSampleStream(lineStream);
-            // Specifies the minimum number of times a feature must be seen
-            int cutoff = 1;
-            int trainingIterations = 100;
-            model = DocumentCategorizerME.train(lang, sampleStream, cutoff, trainingIterations);
+
+            TrainingParameters params = TrainingParameters.defaultParams();
+            System.out.println("default algorithm: " + params.algorithm());
+            params.put(TrainingParameters.ITERATIONS_PARAM, 100+"");
+            params.put(TrainingParameters.CUTOFF_PARAM, 1+"");
+            params.put(TrainingParameters.ALGORITHM_PARAM, NaiveBayesTrainer.NAIVE_BAYES_VALUE);
+            model = DocumentCategorizerME.train(lang, sampleStream, params, new DoccatFactory());
         } catch (IOException e) {
             e.printStackTrace();
-        } finally {
-            if (dataIn != null) {
-                try {
-                    dataIn.close();
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-            }
         }
     }
 
     public String classifyNewReview(String text) {
         DocumentCategorizerME myCategorizer = new DocumentCategorizerME(model);
-        double[] outcomes = myCategorizer.categorize(editReviewText(text));
+        double[] outcomes = myCategorizer.categorize(editReviewText(text).split(" "));
         return myCategorizer.getBestCategory(outcomes);
     }
 
