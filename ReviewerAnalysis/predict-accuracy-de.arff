@@ -8,13 +8,17 @@
 @ATTRIBUTE sentimentAnalysis      NUMERIC
 @ATTRIBUTE sentimentRatingOffset  NUMERIC
 @ATTRIBUTE consecutiveCaps        NUMERIC
+@ATTRIBUTE consecutivePeriods     NUMERIC
+@ATTRIBUTE consCapsTextRatio      NUMERIC
+@ATTRIBUTE consPeriodsTextRatio   NUMERIC
 @ATTRIBUTE distinctWordRatio      NUMERIC
 @ATTRIBUTE averageWordLength      NUMERIC
 @ATTRIBUTE numberOfLineBreaks     NUMERIC
 @ATTRIBUTE numberOfQuestionMarks  NUMERIC
 @ATTRIBUTE numberOfExclMarks      NUMERIC
+@ATTRIBUTE lineBreakTextRatio     NUMERIC
 @ATTRIBUTE punctuationLetterRatio NUMERIC
 @ATTRIBUTE persona                {Expert,Rager,Euphoric,Complainer,WaitingForMrPerfect,BeatingAroundTheBush,NoDemands}
 
 @DATA
-0,0,1,259,1,2,6,0,0.8837209302325582,6.023255813953488,0,0,8,0.18604651162790697,Rager
+0,0,1,77,5,4,4,0,0,0.0,0.0,0.9285714285714286,5.5,0,0,0,0.0,0.0,NoDemands

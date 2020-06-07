@@ -1,5 +1,6 @@
 package com.reviewerAnalysis;
 
+import com.reviewerAnalysis.controller.ReviewController;
 import com.reviewerAnalysis.data.Persona;
 import com.reviewerAnalysis.data.PersonaRepository;
 import com.reviewerAnalysis.data.Review;
@@ -8,7 +9,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 import weka.classifiers.Classifier;
-import weka.classifiers.bayes.BayesNet;
 import weka.classifiers.trees.lmt.LogisticBase;
 import weka.core.Instances;
 import weka.core.converters.ConverterUtils;
@@ -50,7 +50,7 @@ public class PersonaDetection {
         return accuracies.get(lang) == null ? -1.0 : accuracies.get(lang);
     }
 
-    public double[] calcAccuracy(String lang, Classifier classifier) {
+    public ReviewController.Result calcAccuracy(String lang, Classifier classifier) {
         isCalculating = true;
         Classifier defaultClassifier = new LogisticBase();
         if (classifier == null) {
@@ -58,10 +58,15 @@ public class PersonaDetection {
         }
         long start = System.currentTimeMillis();
         int correct = 0;
+        Map<String, Integer> correctCounter = new HashMap<>();
+        Map<String, Integer> wrongCounter = new HashMap<>();
+        for (Persona persona : personaRepository.findAllByOrderByIdAsc()) {
+            correctCounter.put(persona.getName(), 0);
+            wrongCounter.put(persona.getName(), 0);
+        }
         List<Review> reviews = reviewRepository.findByLangAndIsForTraining(lang, true);
         for (int i = 0; i < reviews.size(); i++) {
-            List<String> trainingData = new LinkedList<>();
-            int counter = 0;
+
             try {
                 String fileName = "accuracy-test-" + lang + ".arff";
                 List<Review> list = reviewRepository.findByLangAndIsForTraining(lang, true);
@@ -97,28 +102,39 @@ public class PersonaDetection {
                 for (int j = 0; j < prediction.numInstances(); j++) {
                     double label = classifier.classifyInstance(prediction.instance(j));
                     prediction.instance(j).setClassValue(label);
-                    String persona = prediction.instance(j).stringValue(prediction.numAttributes() - 1);
+                    String result = prediction.instance(j).stringValue(prediction.numAttributes() - 1);
                     //System.out.println(persona);
-                    personas.add(persona);
+                    personas.add(result);
                 }
 
                 if (personas.get(0).equals(reviews.get(i).getPersona())) {
                     correct++;
+                    correctCounter.put(personas.get(0), correctCounter.get(personas.get(0)) + 1);
                 } else {
+                    wrongCounter.put(personas.get(0), wrongCounter.get(personas.get(0)) + 1);
                     System.err.println("Error! Expected " + reviews.get(i).getPersona() + ", got " + personas.get(0));
                 }
             } catch (Exception e) {
                 e.printStackTrace();
                 isCalculating = false;
-                return new double[]{0,0};
+                return null;
             }
         }
+        double accuracy = (double) correct / reviews.size();
 
         if (defaultClassifier == classifier) {
-            accuracies.put(lang, (double) correct / reviews.size());
+            accuracies.put(lang, accuracy);
         }
+
+        Map<String, Double> personaAccuracies = new HashMap<>();
+        for (Persona persona : personaRepository.findAllByOrderByIdAsc()) {
+            int rights = correctCounter.get(persona.getName());
+            int wrongs = wrongCounter.get(persona.getName());
+            personaAccuracies.put(persona.getName(), (double) rights / (rights + wrongs));
+        }
+
         isCalculating = false;
-        return new double[]{(double) correct / reviews.size(), System.currentTimeMillis() - start};
+        return new ReviewController.Result(personaAccuracies, accuracy, System.currentTimeMillis() - start);
     }
 
     public void train(String lang) {
@@ -134,6 +150,10 @@ public class PersonaDetection {
 
             logisticBase = new LogisticBase();
             logisticBase.buildClassifier(train);
+            System.out.println(logisticBase.getWeightTrimBeta());
+            System.out.println(logisticBase.getNumRegressions());
+            System.out.println(logisticBase.getBatchSize());
+            System.out.println(logisticBase);
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -193,11 +213,15 @@ public class PersonaDetection {
                 string += review.getSentimentAnalysis() + ",";
                 string += sentimentRatingOffset + ",";
                 string += stats.getConsecutiveCaps() + ",";
+                string += stats.getConsecutivePeriods() + ",";
+                string += stats.getConsCapsTextRatio() + ",";
+                string += stats.getConsPeriodsTextRatio() + ",";
                 string += stats.getDistinctWordRatio() + ",";
                 string += stats.getAverageWordLength() + ",";
                 string += stats.getLineBreaks() + ",";
                 string += stats.getQuestionMarks() + ",";
                 string += stats.getExclMarks() + ",";
+                string += stats.getLineBreakTextRatio() + ",";
                 string += stats.getPunctuationLetterRatio() + ",";
                 string += review.getPersona() == null ? "?" : review.getPersona();
                 writer.write(string + "\n");
@@ -233,11 +257,15 @@ public class PersonaDetection {
         writer.write("@ATTRIBUTE sentimentAnalysis      NUMERIC\n");
         writer.write("@ATTRIBUTE sentimentRatingOffset  NUMERIC\n");
         writer.write("@ATTRIBUTE consecutiveCaps        NUMERIC\n");
+        writer.write("@ATTRIBUTE consecutivePeriods     NUMERIC\n");
+        writer.write("@ATTRIBUTE consCapsTextRatio      NUMERIC\n");
+        writer.write("@ATTRIBUTE consPeriodsTextRatio   NUMERIC\n");
         writer.write("@ATTRIBUTE distinctWordRatio      NUMERIC\n");
         writer.write("@ATTRIBUTE averageWordLength      NUMERIC\n");
         writer.write("@ATTRIBUTE numberOfLineBreaks     NUMERIC\n");
         writer.write("@ATTRIBUTE numberOfQuestionMarks  NUMERIC\n");
         writer.write("@ATTRIBUTE numberOfExclMarks      NUMERIC\n");
+        writer.write("@ATTRIBUTE lineBreakTextRatio     NUMERIC\n");
         writer.write("@ATTRIBUTE punctuationLetterRatio NUMERIC\n");
         writer.write("@ATTRIBUTE persona                " + personas + "\n\n");
         writer.write("@DATA\n");
@@ -251,8 +279,8 @@ public class PersonaDetection {
 
         text = StringUtils.replace(text, "<br>", " ");
         Scanner scan = new Scanner(text);
-        ArrayList<String> words = new ArrayList<String>();
-        ArrayList<String> uniqueWords = new ArrayList<String>();
+        ArrayList<String> words = new ArrayList<>();
+        ArrayList<String> uniqueWords = new ArrayList<>();
         while (scan.hasNext()) {
             String word = scan.next();
             words.add(word);
@@ -262,32 +290,47 @@ public class PersonaDetection {
         }
 
         int consecutiveCaps = 0;
+        int consecutivePeriods = 0;
         for (int i = 0; i < text.length() - 1; i++) {
             if (Character.isUpperCase(text.charAt(i)) && Character.isUpperCase(text.charAt(i + 1))) {
                 consecutiveCaps++;
             }
+            if (text.charAt(i) == '.' && text.charAt(i + 1) == '.') {
+                consecutivePeriods++;
+            }
         }
 
+        double consCapsTextRatio = (double) consecutiveCaps / text.length();
+        double consPeriodsTextRatio = (double) consecutivePeriods / text.length();
+        double lineBreakTextRatio = (double) lineBreaks / words.size();
         double averageWordLength = (double) text.length() / words.size();
         double distinctWordRatio = (double) uniqueWords.size() / words.size();
         double punctuationLetterRatio = (double) (questionMarks + exclMarks) / words.size();
-        return new Stats(consecutiveCaps, exclMarks, questionMarks, lineBreaks, distinctWordRatio, averageWordLength, punctuationLetterRatio);
+        return new Stats(consecutivePeriods, consecutiveCaps, exclMarks, questionMarks, lineBreaks, consCapsTextRatio, consPeriodsTextRatio, lineBreakTextRatio, distinctWordRatio, averageWordLength, punctuationLetterRatio);
     }
 
     private class Stats {
+        private int consecutivePeriods;
         private int consecutiveCaps;
         private int exclMarks;
         private int questionMarks;
         private int lineBreaks;
+        private double consCapsTextRatio;
+        private double consPeriodsTextRatio;
+        private double lineBreakTextRatio;
         private double distinctWordRatio;
         private double averageWordLength;
         private double punctuationLetterRatio;
 
-        public Stats(int consecutiveCaps, int exclMarks, int questionMarks, int lineBreaks, double distinctWordRatio, double averageWordLength, double punctuationLetterRatio) {
+        public Stats(int consecutivePeriods, int consecutiveCaps, int exclMarks, int questionMarks, int lineBreaks, double consCapsTextRatio, double consPeriodsTextRatio, double lineBreakTextRatio, double distinctWordRatio, double averageWordLength, double punctuationLetterRatio) {
+            this.consecutivePeriods = consecutivePeriods;
             this.consecutiveCaps = consecutiveCaps;
             this.exclMarks = exclMarks;
             this.questionMarks = questionMarks;
             this.lineBreaks = lineBreaks;
+            this.consCapsTextRatio = consCapsTextRatio;
+            this.consPeriodsTextRatio = consPeriodsTextRatio;
+            this.lineBreakTextRatio = lineBreakTextRatio;
             this.distinctWordRatio = distinctWordRatio;
             this.averageWordLength = averageWordLength;
             this.punctuationLetterRatio = punctuationLetterRatio;
@@ -319,6 +362,22 @@ public class PersonaDetection {
 
         public double getPunctuationLetterRatio() {
             return punctuationLetterRatio;
+        }
+
+        public double getLineBreakTextRatio() {
+            return lineBreakTextRatio;
+        }
+
+        public double getConsPeriodsTextRatio() {
+            return consPeriodsTextRatio;
+        }
+
+        public double getConsCapsTextRatio() {
+            return consCapsTextRatio;
+        }
+
+        public int getConsecutivePeriods() {
+            return consecutivePeriods;
         }
     }
 }

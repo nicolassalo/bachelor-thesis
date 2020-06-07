@@ -6,9 +6,11 @@ import com.reviewerAnalysis.data.*;
 import com.reviewerAnalysis.model.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
+import org.springframework.context.annotation.Scope;
 import org.springframework.context.event.EventListener;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.stereotype.Component;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.client.RestTemplate;
 import weka.classifiers.Classifier;
@@ -27,6 +29,7 @@ import weka.classifiers.rules.*;
 import weka.classifiers.trees.*;
 import weka.classifiers.trees.lmt.LogisticBase;
 
+import javax.servlet.http.HttpServletRequest;
 import javax.transaction.Transactional;
 import javax.validation.Valid;
 import java.util.*;
@@ -37,6 +40,9 @@ import java.util.stream.Collectors;
 @RestController
 @RequestMapping("/reviewerAnalysis")
 public class ReviewController {
+
+    @Autowired(required=true)
+    private HttpServletRequest request;
 
     @Autowired
     ReviewerRepository reviewerRepository;
@@ -49,6 +55,9 @@ public class ReviewController {
 
     @Autowired
     PersonaRepository personaRepository;
+
+    @Autowired
+    StatsRepository statsRepository;
 
     @Autowired
     PersonaDetection personaDetection;
@@ -83,10 +92,14 @@ public class ReviewController {
             }
         }
         new Thread(() -> {
-            personaDetection.calcAccuracy(lang, null);
-            naturalLanguageProcessor.calcAccuracy(lang);
+            if (!personaDetection.isCalculating()) {
+                personaDetection.calcAccuracy(lang, null);
+            }
+            if (!naturalLanguageProcessor.isCalculating()) {
+                naturalLanguageProcessor.calcAccuracy(lang);
+            }
         }).start();
-        return new ResponseEntity<>(new ResponseMessage(personaAccuracy + " % for personaDetection and " + nlpAccuracy + " % for nlpDetection"), HttpStatus.OK);
+        return new ResponseEntity<>(new ResponseMessage(personaAccuracy + " for personaDetection and " + nlpAccuracy + " for nlpDetection"), HttpStatus.OK);
     }
 
     @GetMapping("/countReviews/{password}")
@@ -168,6 +181,7 @@ public class ReviewController {
         if (language.getConfidence() < 0.95) {
             return new ResponseEntity<>(new ResponseMessage("Language might be " + language.getLang() + ", but only " + Math.round(language.getConfidence() * 100) + " % confident!"), HttpStatus.BAD_REQUEST);
         }
+        request.getSession().setAttribute("lang", language.getLang());
         List<Review> reviews = new LinkedList<>();
         reviews.add(new Review(review.getTimestamp(), review.getTimeSincePreviousReview(), review.getRating(), review.getReviewText().length(), review.isHasPicture(), review.isHasVideo(), review.isPurchaseVerified(), getSentiment(review.getReviewText()), review.getReviewText(), language.getLang(), null, review.getPersona(), true));
         List<String> wekaResult = personaDetection.detectPersona(reviews);
@@ -205,6 +219,10 @@ public class ReviewController {
             }
         }
 
+        if (reviews.size() > 0) {
+            request.getSession().setAttribute("lang", reviews.get(0).getLang());
+        }
+
         if (reviews.size() >= 10 && saveReviews) {
             reviewerRepository.save(new Reviewer(reviews));
         }
@@ -223,17 +241,52 @@ public class ReviewController {
     }
 
     private PersonaResponse.Item calculateResult(List<PersonaResponse.Item> nlpResults, List<PersonaResponse.Item> wekaResults) {
+        List<Stats> stats = statsRepository.findAll();
         double wekaRelevanceFactor = 2; // how much more weight is on the wekaResults
         double nlpRelevanecFactor = 1; // how much more weight is on the nlpResults
         double[] probabilities = new double[personaRepository.findAll().size()];
         for (PersonaResponse.Item item : wekaResults) {
             int position = personaRepository.findByName(item.getPersona()).get().getId().intValue() - 1;
-            probabilities[position] += item.getConfidence() * wekaRelevanceFactor;
+            double factor;
+            if (stats.size() > 0) {
+                /*
+                    example: accuracy of 0.5 becomes factor 2, accuracy of 0.75 becomes factor 4
+                    problem: accuracy of 1 results in a division by zero
+                    possible solution: accuracy of 1 becomes the factor of the number of existing reviews labeled with this persona (N)
+                    reason: the factor would be proportionally larger than the next lowest accuracy of 1 / (N - 1)
+                 */
+                double accuracy = stats.get(0).getWekaPersonaAccuracies().get(item.getPersona());
+                if (accuracy < 1) {
+                    factor = 1 / (1 - accuracy);
+                } else {
+                    factor = reviewRepository.findByLangAndPersonaAndIsForTraining((String) request.getSession().getAttribute("lang"), item.getPersona(), true).size();
+                }
+            } else {
+                factor = wekaRelevanceFactor;
+            }
+            probabilities[position] += item.getConfidence() * factor;
         }
 
         for (PersonaResponse.Item item : nlpResults) {
             int position = personaRepository.findByName(item.getPersona()).get().getId().intValue() - 1;
-            probabilities[position] += item.getConfidence() * nlpRelevanecFactor;
+            double factor;
+            if (stats.size() > 0) {
+                /*
+                    example: accuracy of 0.5 becomes factor 2, accuracy of 0.75 becomes factor 4
+                    problem: accuracy of 1 results in a division by zero
+                    possible solution: accuracy of 1 becomes the factor of the number of existing reviews labeled with this persona (N)
+                    reason: the factor would be proportionally larger than the next lowest accuracy of 1 / (N - 1)
+                 */
+                double accuracy = stats.get(0).getNlpPersonaAccuracies().get(item.getPersona());
+                if (accuracy < 1) {
+                    factor = 1 / (1 - accuracy);
+                } else {
+                    factor = reviewRepository.findByLangAndPersonaAndIsForTraining((String) request.getSession().getAttribute("lang"), item.getPersona(), true).size();
+                }
+            } else {
+                factor = nlpRelevanecFactor;
+            }
+            probabilities[position] += item.getConfidence() * factor;
         }
 
 
@@ -367,7 +420,12 @@ public class ReviewController {
         // do not train model before having at least 2 examples per persona (throws exception)
         naturalLanguageProcessor.train("de");
         personaDetection.train("de");
+        //System.out.println(personaDetection.calcAccuracy("de", null)[0]);
         //compareAlgorithms();
+        Result wekaResult = personaDetection.calcAccuracy("de", null);
+        Result nlpResult = naturalLanguageProcessor.calcAccuracy("de");
+        statsRepository.deleteAll();
+        statsRepository.save(new Stats(wekaResult.getAccuracy(), nlpResult.getAccuracy(), wekaResult.getPersonaAccuracies(), nlpResult.getPersonaAccuracies()));
     }
 
     private void compareAlgorithms() {
@@ -434,8 +492,8 @@ public class ReviewController {
 
         for (Classifier classifier : classifiers) {
             System.out.println("using " + classifier.getClass().getName());
-            double[] result = personaDetection.calcAccuracy("de", classifier);
-            accuracies.add(new ClassifierAccuracy(result[0], result[1], classifier));
+            Result result = personaDetection.calcAccuracy("de", classifier);
+            accuracies.add(new ClassifierAccuracy(result.getAccuracy(), result.getTime(), classifier));
         }
 
         accuracies.sort((c1, c2) -> (int) ((c2.getAccuracy() * 10000) - (c1.getAccuracy() * 10000)));
@@ -465,6 +523,30 @@ public class ReviewController {
         }
 
         public double getTime() {
+            return time;
+        }
+    }
+
+    public static class Result {
+        private Map<String, Double> personaAccuracies;
+        private double accuracy;
+        private long time;
+
+        public Result(Map<String, Double> personaAccuracies, double  accuracy, long time) {
+            this.personaAccuracies = personaAccuracies;
+            this.accuracy = accuracy;
+            this.time = time;
+        }
+
+        public Map<String, Double> getPersonaAccuracies() {
+            return personaAccuracies;
+        }
+
+        public double getAccuracy() {
+            return accuracy;
+        }
+
+        public long getTime() {
             return time;
         }
     }

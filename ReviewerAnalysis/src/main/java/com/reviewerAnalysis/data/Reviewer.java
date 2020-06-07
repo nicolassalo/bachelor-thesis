@@ -5,7 +5,6 @@ import java.util.List;
 
 @Entity
 public class Reviewer {
-    private static final int EXPIRATION_DEFAULT = 1000 * 60 * 60 * 24;
 
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)

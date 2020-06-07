@@ -7,7 +7,6 @@ import javax.persistence.Id;
 
 @Entity
 public class Password {
-    private static final int EXPIRATION_DEFAULT = 1000 * 60 * 60 * 24;
 
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
