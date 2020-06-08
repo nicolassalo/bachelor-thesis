@@ -9,7 +9,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 import weka.classifiers.Classifier;
-import weka.classifiers.trees.lmt.LogisticBase;
+import weka.classifiers.meta.ClassificationViaRegression;
 import weka.core.Instances;
 import weka.core.converters.ConverterUtils;
 
@@ -20,7 +20,7 @@ import java.io.InputStream;
 import java.util.*;
 
 @Service
-public class PersonaDetection {
+public class WekaPersonaDetection {
 
     @Autowired
     PersonaRepository personaRepository;
@@ -28,31 +28,24 @@ public class PersonaDetection {
     @Autowired
     ReviewRepository reviewRepository;
 
-    private LogisticBase logisticBase;
+    private ClassificationViaRegression classifier;
 
     private Instances train;
 
     private Instances accuracyTrain;
 
-    private Map<String, Double> accuracies;
     private boolean isCalculating;
 
-    private PersonaDetection() {
-        accuracies = new HashMap<>();
-        isCalculating = false;
+    private WekaPersonaDetection() {
     }
 
     public boolean isCalculating() {
         return isCalculating;
     }
 
-    public double getAccuracy(String lang) {
-        return accuracies.get(lang) == null ? -1.0 : accuracies.get(lang);
-    }
-
     public ReviewController.Result calcAccuracy(String lang, Classifier classifier) {
         isCalculating = true;
-        Classifier defaultClassifier = new LogisticBase();
+        Classifier defaultClassifier = new ClassificationViaRegression();
         if (classifier == null) {
             classifier = defaultClassifier;
         }
@@ -65,6 +58,7 @@ public class PersonaDetection {
             wrongCounter.put(persona.getName(), 0);
         }
         List<Review> reviews = reviewRepository.findByLangAndIsForTraining(lang, true);
+        System.out.println("calculating accuracy for weka");
         for (int i = 0; i < reviews.size(); i++) {
 
             try {
@@ -112,7 +106,10 @@ public class PersonaDetection {
                     correctCounter.put(personas.get(0), correctCounter.get(personas.get(0)) + 1);
                 } else {
                     wrongCounter.put(personas.get(0), wrongCounter.get(personas.get(0)) + 1);
-                    System.err.println("Error! Expected " + reviews.get(i).getPersona() + ", got " + personas.get(0));
+                    //System.err.println("Error! Expected " + reviews.get(i).getPersona() + ", got " + personas.get(0));
+                }
+                if (i % 10 == 0) {
+                    System.out.println(Math.round(((double) i/reviews.size()) * 100) + " %");
                 }
             } catch (Exception e) {
                 e.printStackTrace();
@@ -121,10 +118,6 @@ public class PersonaDetection {
             }
         }
         double accuracy = (double) correct / reviews.size();
-
-        if (defaultClassifier == classifier) {
-            accuracies.put(lang, accuracy);
-        }
 
         Map<String, Double> personaAccuracies = new HashMap<>();
         for (Persona persona : personaRepository.findAllByOrderByIdAsc()) {
@@ -148,12 +141,10 @@ public class PersonaDetection {
                 train.setClassIndex(train.numAttributes() - 1);
             }
 
-            logisticBase = new LogisticBase();
-            logisticBase.buildClassifier(train);
-            System.out.println(logisticBase.getWeightTrimBeta());
-            System.out.println(logisticBase.getNumRegressions());
-            System.out.println(logisticBase.getBatchSize());
-            System.out.println(logisticBase);
+            classifier = new ClassificationViaRegression();
+            classifier.buildClassifier(train);
+            System.out.println(classifier.getBatchSize());
+            System.out.println(classifier);
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -179,7 +170,7 @@ public class PersonaDetection {
 
             List<String> personas = new LinkedList<>();
             for (int i = 0; i < prediction.numInstances(); i++) {
-                double label = logisticBase.classifyInstance(prediction.instance(i));
+                double label = classifier.classifyInstance(prediction.instance(i));
                 prediction.instance(i).setClassValue(label);
                 String persona = prediction.instance(i).stringValue(prediction.numAttributes() - 1);
                 System.out.println(persona);
@@ -213,9 +204,9 @@ public class PersonaDetection {
                 string += review.getSentimentAnalysis() + ",";
                 string += sentimentRatingOffset + ",";
                 string += stats.getConsecutiveCaps() + ",";
-                string += stats.getConsecutivePeriods() + ",";
+                //string += stats.getConsecutivePeriods() + ",";
                 string += stats.getConsCapsTextRatio() + ",";
-                string += stats.getConsPeriodsTextRatio() + ",";
+                //string += stats.getConsPeriodsTextRatio() + ",";
                 string += stats.getDistinctWordRatio() + ",";
                 string += stats.getAverageWordLength() + ",";
                 string += stats.getLineBreaks() + ",";
@@ -257,9 +248,9 @@ public class PersonaDetection {
         writer.write("@ATTRIBUTE sentimentAnalysis      NUMERIC\n");
         writer.write("@ATTRIBUTE sentimentRatingOffset  NUMERIC\n");
         writer.write("@ATTRIBUTE consecutiveCaps        NUMERIC\n");
-        writer.write("@ATTRIBUTE consecutivePeriods     NUMERIC\n");
+        //writer.write("@ATTRIBUTE consecutivePeriods     NUMERIC\n");
         writer.write("@ATTRIBUTE consCapsTextRatio      NUMERIC\n");
-        writer.write("@ATTRIBUTE consPeriodsTextRatio   NUMERIC\n");
+        //writer.write("@ATTRIBUTE consPeriodsTextRatio   NUMERIC\n");
         writer.write("@ATTRIBUTE distinctWordRatio      NUMERIC\n");
         writer.write("@ATTRIBUTE averageWordLength      NUMERIC\n");
         writer.write("@ATTRIBUTE numberOfLineBreaks     NUMERIC\n");

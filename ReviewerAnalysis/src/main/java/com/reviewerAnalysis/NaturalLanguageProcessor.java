@@ -35,19 +35,12 @@ public class NaturalLanguageProcessor {
 
     DoccatModel accuracyTestModel;
 
-    private Map<String, Double> accuracies;
     private boolean isCalculating;
 
-    private NaturalLanguageProcessor() {
-        accuracies = new HashMap<>();
-    }
+    private NaturalLanguageProcessor() {}
 
     public boolean isCalculating() {
         return isCalculating;
-    }
-
-    public double getAccuracy(String lang) {
-        return accuracies.get(lang) == null ? -1.0 : accuracies.get(lang);
     }
 
     public ReviewController.Result calcAccuracy(String lang) {
@@ -61,6 +54,7 @@ public class NaturalLanguageProcessor {
             wrongCounter.put(persona.getName(), 0);
         }
         List<Review> reviews = reviewRepository.findByLangAndIsForTraining(lang, true);
+        System.out.println("calculating accuracy for nlp");
         for (int i = 0; i < reviews.size(); i++) {
             List<String> trainingData = new LinkedList<>();
             int counter = 0;
@@ -85,7 +79,10 @@ public class NaturalLanguageProcessor {
                 TrainingParameters params = TrainingParameters.defaultParams();
                 params.put(TrainingParameters.ITERATIONS_PARAM, Integer.toString(100));
                 params.put(TrainingParameters.CUTOFF_PARAM, Integer.toString(1));
-
+                params.put("PrintMessages", false);
+                if (i % 10 == 0) {
+                    System.out.println(Math.round(((double) i/reviews.size()) * 100) + " %");
+                }
                 accuracyTestModel = DocumentCategorizerME.train(lang, sampleStream, params, new DoccatFactory());
 
             } catch (IOException e) {
@@ -103,7 +100,6 @@ public class NaturalLanguageProcessor {
             }
         }
         double accuracy = (double) correct / reviews.size();
-        accuracies.put(lang, accuracy);
 
         Map<String, Double> personaAccuracies = new HashMap<>();
         for (Persona persona : personaRepository.findAllByOrderByIdAsc()) {
@@ -144,7 +140,7 @@ public class NaturalLanguageProcessor {
             System.out.println("default algorithm: " + params.algorithm());
             params.put(TrainingParameters.ITERATIONS_PARAM, 100+"");
             params.put(TrainingParameters.CUTOFF_PARAM, 1+"");
-            params.put(TrainingParameters.ALGORITHM_PARAM, NaiveBayesTrainer.NAIVE_BAYES_VALUE);
+            params.put("PrintMessages", false);
             model = DocumentCategorizerME.train(lang, sampleStream, params, new DoccatFactory());
         } catch (IOException e) {
             e.printStackTrace();

@@ -1,7 +1,7 @@
 package com.reviewerAnalysis.controller;
 
 import com.reviewerAnalysis.NaturalLanguageProcessor;
-import com.reviewerAnalysis.PersonaDetection;
+import com.reviewerAnalysis.WekaPersonaDetection;
 import com.reviewerAnalysis.data.*;
 import com.reviewerAnalysis.model.*;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -13,15 +13,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.client.RestTemplate;
 import weka.classifiers.Classifier;
 import weka.classifiers.bayes.BayesNet;
-import weka.classifiers.bayes.NaiveBayesMultinomial;
-import weka.classifiers.bayes.NaiveBayesMultinomialUpdateable;
-import weka.classifiers.bayes.net.BIFReader;
-import weka.classifiers.bayes.net.BayesNetGenerator;
-import weka.classifiers.bayes.net.EditableBayesNet;
 import weka.classifiers.functions.*;
-import weka.classifiers.lazy.IBk;
-import weka.classifiers.lazy.KStar;
-import weka.classifiers.lazy.LWL;
 import weka.classifiers.meta.*;
 import weka.classifiers.rules.*;
 import weka.classifiers.trees.*;
@@ -58,7 +50,7 @@ public class ReviewController {
     StatsRepository statsRepository;
 
     @Autowired
-    PersonaDetection personaDetection;
+    WekaPersonaDetection wekaPersonaDetection;
 
     @Autowired
     NaturalLanguageProcessor naturalLanguageProcessor;
@@ -74,9 +66,9 @@ public class ReviewController {
      */
     @GetMapping("/accuracy/{lang}")
     public ResponseEntity<?> getAccuracy(@PathVariable String lang) {
-        if (!personaDetection.isCalculating() && !naturalLanguageProcessor.isCalculating()) {
+        if (!wekaPersonaDetection.isCalculating() && !naturalLanguageProcessor.isCalculating()) {
             new Thread(() -> {
-                Result wekaResult = personaDetection.calcAccuracy(lang, null);
+                Result wekaResult = wekaPersonaDetection.calcAccuracy(lang, null);
                 Result nlpResult = naturalLanguageProcessor.calcAccuracy(lang);
                 statsRepository.deleteAll();
                 statsRepository.save(new Stats(lang, wekaResult.getAccuracy(), nlpResult.getAccuracy(), wekaResult.getPersonaAccuracies(), nlpResult.getPersonaAccuracies()));
@@ -100,7 +92,7 @@ public class ReviewController {
         long start = System.currentTimeMillis();
         int size = reviewRepository.findByLangAndIsForTraining(lang, true).size();
 
-        personaDetection.train(lang);
+        wekaPersonaDetection.train(lang);
         naturalLanguageProcessor.train(lang);
 
         long finish = System.currentTimeMillis();
@@ -171,7 +163,7 @@ public class ReviewController {
         request.getSession().setAttribute("lang", language.getLang());
         List<Review> reviews = new LinkedList<>();
         reviews.add(new Review(review.getTimestamp(), review.getTimeSincePreviousReview(), review.getRating(), review.getReviewText().length(), review.isHasPicture(), review.isHasVideo(), review.isPurchaseVerified(), getSentiment(review.getReviewText()), review.getReviewText(), language.getLang(), null, review.getPersona(), true));
-        List<String> wekaResult = personaDetection.detectPersona(reviews);
+        List<String> wekaResult = wekaPersonaDetection.detectPersona(reviews);
         List<String> nlpResult = new LinkedList<>();
         nlpResult.add(naturalLanguageProcessor.classifyNewReview(review.getReviewText()));
         List<PersonaResponse.Item> nlpItems = getItems(nlpResult);
@@ -215,7 +207,7 @@ public class ReviewController {
             System.out.println("saved new reviewer");
         }
 
-        List<String> wekaResults = personaDetection.detectPersona(reviews);
+        List<String> wekaResults = wekaPersonaDetection.detectPersona(reviews);
         System.out.println("wekaResults ready");
 
         List<String> nlpResults = new LinkedList<>();
@@ -415,9 +407,12 @@ public class ReviewController {
     public void initialize() {
         // do not train model before having at least 2 examples per persona (throws exception)
         naturalLanguageProcessor.train("de");
-        personaDetection.train("de");
+        wekaPersonaDetection.train("de");
         //compareAlgorithms();
-        Result wekaResult = personaDetection.calcAccuracy("de", null);
+
+        //updateReviewSentiment();
+
+        Result wekaResult = wekaPersonaDetection.calcAccuracy("de", null);
         Result nlpResult = naturalLanguageProcessor.calcAccuracy("de");
         statsRepository.deleteByLang("de");
         statsRepository.save(new Stats("de", wekaResult.getAccuracy(), nlpResult.getAccuracy(), wekaResult.getPersonaAccuracies(), nlpResult.getPersonaAccuracies()));
@@ -425,25 +420,27 @@ public class ReviewController {
 
     private void compareAlgorithms() {
         List<Classifier> classifiers = new LinkedList<>();
-        classifiers.add(new SimpleLogistic()); // shared first place but slower (maybe because storage was getting full)
-        classifiers.add(new LogisticBase()); // shared first place but faster (maybe because storage was getting full)
+        classifiers.add(new ClassificationViaRegression()); // new first place
+        classifiers.add(new DecisionTable());
+        classifiers.add(new LMT());
+        classifiers.add(new SimpleLogistic()); // shared first place but slower (maybe because memory was getting full)
+        classifiers.add(new LogisticBase()); // shared first place but faster (maybe because memory was getting full)
+        classifiers.add(new RandomForest());
         classifiers.add(new BayesNet());
+        /*
         classifiers.add(new NaiveBayesMultinomial()); // cannot deal with negative numbers
         classifiers.add(new NaiveBayesMultinomialUpdateable()); // cannot deal with negative numbers
         classifiers.add(new AttributeSelectedClassifier());
-        classifiers.add(new DecisionTable());
         classifiers.add(new FilteredClassifier());
         classifiers.add(new IBk());
         classifiers.add(new J48());
         classifiers.add(new JRip());
         classifiers.add(new KStar());
-        classifiers.add(new LMT());
         classifiers.add(new Logistic());
         classifiers.add(new MultiClassClassifier());
         classifiers.add(new MultiClassClassifierUpdateable());
         classifiers.add(new MultilayerPerceptron());
         classifiers.add(new PART());
-        classifiers.add(new RandomForest());
         classifiers.add(new RandomTree());
         classifiers.add(new REPTree());
         classifiers.add(new SMO());
@@ -451,11 +448,10 @@ public class ReviewController {
         classifiers.add(new BayesNetGenerator());
         classifiers.add(new EditableBayesNet());
         classifiers.add(new BIFReader());
-        classifiers.add(new ClassificationViaRegression());
         classifiers.add(new LWL());
         classifiers.add(new RandomCommittee());
         classifiers.add(new RandomSubSpace());
-
+        */
 
         /* worst
         classifiers.add(new Stacking());
@@ -487,7 +483,7 @@ public class ReviewController {
 
         for (Classifier classifier : classifiers) {
             System.out.println("using " + classifier.getClass().getName());
-            Result result = personaDetection.calcAccuracy("de", classifier);
+            Result result = wekaPersonaDetection.calcAccuracy("de", classifier);
             accuracies.add(new ClassifierAccuracy(result.getAccuracy(), result.getTime(), classifier));
         }
 
@@ -543,6 +539,16 @@ public class ReviewController {
 
         public long getTime() {
             return time;
+        }
+    }
+
+    private void updateReviewSentiment() {
+        List<Review> reviews = reviewRepository.findAll();
+        for (Review review : reviews) {
+            Review update = review;
+            update.setSentimentAnalysis(getSentiment(update.getReviewText()));
+            reviewRepository.save(update);
+            System.out.println("Updated reviewId " + update.getId());
         }
     }
 }
