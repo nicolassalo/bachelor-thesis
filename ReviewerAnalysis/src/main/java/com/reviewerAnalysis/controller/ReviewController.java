@@ -31,9 +31,6 @@ import java.util.stream.Collectors;
 @RequestMapping("/reviewerAnalysis")
 public class ReviewController {
 
-    @Autowired(required=true)
-    private HttpServletRequest request;
-
     @Autowired
     ReviewerRepository reviewerRepository;
 
@@ -68,8 +65,8 @@ public class ReviewController {
     public ResponseEntity<?> getAccuracy(@PathVariable String lang) {
         if (!wekaPersonaDetection.isCalculating() && !naturalLanguageProcessor.isCalculating()) {
             new Thread(() -> {
-                Result wekaResult = wekaPersonaDetection.calcAccuracy(lang, null);
                 Result nlpResult = naturalLanguageProcessor.calcAccuracy(lang);
+                Result wekaResult = wekaPersonaDetection.calcAccuracy(lang, null, nlpResult.getTotalPersonaAnalysis());
                 statsRepository.deleteAll();
                 statsRepository.save(new Stats(lang, wekaResult.getAccuracy(), nlpResult.getAccuracy(), wekaResult.getPersonaAccuracies(), nlpResult.getPersonaAccuracies()));
             }).start();
@@ -87,6 +84,7 @@ public class ReviewController {
         return new ResponseEntity<>(new ResponseMessage("You already saved " + reviewRepository.findByPassword(password).size() + " reviews. Keep going!"), HttpStatus.OK);
     }
 
+    /*
     @GetMapping("/trainModels/{lang}")
     public ResponseEntity<?> trainModels(@PathVariable String lang) {
         long start = System.currentTimeMillis();
@@ -98,6 +96,7 @@ public class ReviewController {
         long finish = System.currentTimeMillis();
         return new ResponseEntity<>(new ResponseMessage("Trained models with " + size + " reviews in " + (finish - start) + " ms."), HttpStatus.OK);
     }
+     */
 
     /**
      * Saves the sent review in the collection
@@ -145,32 +144,6 @@ public class ReviewController {
         }
     }
 
-    /**
-     * Detects the persona, that is most suitable for the passed review
-     *
-     * @param review A review of type @{@link ReviewModel} to be analyzed
-     * @return a @{@link ResponseMessage} stating the detected persona
-     */
-    @PostMapping("/analyzeReview")
-    public ResponseEntity<?> analyzeSingleReview(@Valid @RequestBody ReviewModel review) {
-        if (review.getReviewText().length() > 10000) {
-            return new ResponseEntity<>(new ResponseMessage("Text is too long!"), HttpStatus.BAD_REQUEST);
-        }
-        Language language = getLanguage(review.getReviewText());
-        if (language.getConfidence() < 0.95) {
-            return new ResponseEntity<>(new ResponseMessage("Language might be " + language.getLang() + ", but only " + Math.round(language.getConfidence() * 100) + " % confident!"), HttpStatus.BAD_REQUEST);
-        }
-        request.getSession().setAttribute("lang", language.getLang());
-        List<Review> reviews = new LinkedList<>();
-        reviews.add(new Review(review.getTimestamp(), review.getTimeSincePreviousReview(), review.getRating(), review.getReviewText().length(), review.isHasPicture(), review.isHasVideo(), review.isPurchaseVerified(), getSentiment(review.getReviewText()), review.getReviewText(), language.getLang(), null, review.getPersona(), true));
-        List<String> wekaResult = wekaPersonaDetection.detectPersona(reviews);
-        List<String> nlpResult = new LinkedList<>();
-        nlpResult.add(naturalLanguageProcessor.classifyNewReview(review.getReviewText()));
-        List<PersonaResponse.Item> nlpItems = getItems(nlpResult);
-        List<PersonaResponse.Item> wekaItems = getItems(wekaResult);
-        PersonaResponse response = new PersonaResponse(0, nlpItems, wekaItems, calculateResult(nlpItems, wekaItems), calculateActiveness(reviews), calculateElaborateness(reviews));
-        return new ResponseEntity<>(response, HttpStatus.OK);
-    }
 
     /**
      * Detects the persona, that is most suitable for the passed list of reviews
@@ -179,9 +152,11 @@ public class ReviewController {
      * @return a @{@link PersonaResponse} stating the detected persona
      */
     @PostMapping("/")
-    public ResponseEntity<?> analyzeMultipleReviews(@Valid @RequestBody ReviewModelListWrapper reviewWrapper) {
+    public ResponseEntity<?> analyzeReviews(@Valid @RequestBody ReviewModelListWrapper reviewWrapper) {
         List<Review> reviews = new LinkedList<>();
         boolean saveReviews = true;
+        int sumReviewLength = 0;
+        long counter = -1;
         for (ReviewModel review : reviewWrapper.getReviews()) {
             if (review.getReviewText().length() < 10000) {
                 Language language = getLanguage(review.getReviewText());
@@ -191,15 +166,14 @@ public class ReviewController {
                         r = reviewRepository.save(r);
                     } else {
                         saveReviews = false;
+                        r.setId(counter);
+                        counter--;
                     }
                     System.out.println("new review id: " + r.getId());
                     reviews.add(r);
+                    sumReviewLength += review.getReviewText().length();
                 }
             }
-        }
-
-        if (reviews.size() > 0) {
-            request.getSession().setAttribute("lang", reviews.get(0).getLang());
         }
 
         if (reviews.size() >= 10 && saveReviews) {
@@ -207,89 +181,23 @@ public class ReviewController {
             System.out.println("saved new reviewer");
         }
 
-        List<String> wekaResults = wekaPersonaDetection.detectPersona(reviews);
-        System.out.println("wekaResults ready");
-
-        List<String> nlpResults = new LinkedList<>();
+        Map<Long, Map<String, Double>> totalNlpResults = new HashMap<>();
         for (Review review : reviews) {
-            nlpResults.add(naturalLanguageProcessor.classifyNewReview(review.getReviewText()));
+            totalNlpResults.put(review.getId(), naturalLanguageProcessor.analyzeText(review.getReviewText()));
         }
-        System.out.println("nlpResults ready");
 
-        List<PersonaResponse.Item> wekaItems = getItems(wekaResults);
-        System.out.println("wekaItems ready");
 
-        List<PersonaResponse.Item> nlpItems = getItems(nlpResults);
-        System.out.println("nlpItems ready");
+        // TODO: Länge verglichen zur Durchschnittslänge des Reviewers
+        int averageReviewLength = sumReviewLength / reviews.size();
+        Map<String, Double> wekaResults = wekaPersonaDetection.detectPersona(reviews, totalNlpResults);
+        wekaResults = wekaResults.entrySet()
+                .stream()
+                .sorted(Map.Entry.comparingByValue())
+                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue, (e1, e2) -> e1, LinkedHashMap::new));
 
-        PersonaResponse response = new PersonaResponse(reviewWrapper.getReviews().size() - reviews.size(), nlpItems, wekaItems, calculateResult(nlpItems, wekaItems), calculateActiveness(reviews),calculateElaborateness(reviews));
-        System.out.println("response created");
+
+        PersonaResponse response = new PersonaResponse(reviewWrapper.getReviews().size() - reviews.size(), calculateActiveness(reviews),calculateElaborateness(reviews), wekaResults);
         return new ResponseEntity<>(response, HttpStatus.OK);
-    }
-
-    private PersonaResponse.Item calculateResult(List<PersonaResponse.Item> nlpResults, List<PersonaResponse.Item> wekaResults) {
-        System.out.println("calculating result");
-        List<Stats> stats = statsRepository.findByLang((String) request.getSession().getAttribute("lang"));
-        double wekaRelevanceFactor = 2; // how much more weight is on the wekaResults
-        double nlpRelevanecFactor = 1; // how much more weight is on the nlpResults
-        double[] probabilities = new double[personaRepository.findAll().size()];
-        for (PersonaResponse.Item item : wekaResults) {
-            int position = personaRepository.findByName(item.getPersona()).get().getId().intValue() - 1;
-            double factor;
-            if (stats.size() > 0) {
-                /*
-                    example: accuracy of 0.5 becomes factor 2, accuracy of 0.75 becomes factor 4
-                    problem: accuracy of 1 results in a division by zero
-                    possible solution: accuracy of 1 becomes the factor of the number of existing reviews labeled with this persona (N)
-                    reason: the factor would be proportionally larger than the next lowest accuracy of 1 / (N - 1)
-                 */
-                double accuracy = stats.get(0).getWekaPersonaAccuracies().get(item.getPersona());
-                if (accuracy < 1) {
-                    factor = 1 / (1 - accuracy);
-                } else {
-                    factor = reviewRepository.findByLangAndPersonaAndIsForTraining((String) request.getSession().getAttribute("lang"), item.getPersona(), true).size();
-                }
-            } else {
-                factor = wekaRelevanceFactor;
-            }
-            probabilities[position] += item.getConfidence() * factor;
-        }
-
-        for (PersonaResponse.Item item : nlpResults) {
-            int position = personaRepository.findByName(item.getPersona()).get().getId().intValue() - 1;
-            double factor;
-            if (stats.size() > 0) {
-                /*
-                    example: accuracy of 0.5 becomes factor 2, accuracy of 0.75 becomes factor 4
-                    problem: accuracy of 1 results in a division by zero
-                    possible solution: accuracy of 1 becomes the factor of the number of existing reviews labeled with this persona (N)
-                    reason: the factor would be proportionally larger than the next lowest accuracy of 1 / (N - 1)
-                 */
-                double accuracy = stats.get(0).getNlpPersonaAccuracies().get(item.getPersona());
-                if (accuracy < 1) {
-                    factor = 1 / (1 - accuracy);
-                } else {
-                    factor = reviewRepository.findByLangAndPersonaAndIsForTraining((String) request.getSession().getAttribute("lang"), item.getPersona(), true).size();
-                }
-            } else {
-                factor = nlpRelevanecFactor;
-            }
-            probabilities[position] += item.getConfidence() * factor;
-        }
-
-
-        int index = 0;
-        double sum = 0;
-        double highestValue = 0;
-        for (int i = 0; i < probabilities.length; i++) {
-            if (probabilities[i] > highestValue) {
-                index = i;
-                highestValue = probabilities[i];
-            }
-            sum += probabilities[i];
-        }
-        System.out.println("done calculating result");
-        return new PersonaResponse.Item(personaRepository.findById((long) index + 1).get().getName(), highestValue / sum);
     }
 
     /*
@@ -353,29 +261,6 @@ public class ReviewController {
         return (int) Math.round((ratio * 10));
     }
 
-    private List<PersonaResponse.Item> getItems(List<String> results) {
-        Map<String, Long> result =
-                results.stream().collect(
-                        Collectors.groupingBy(
-                                Function.identity(), Collectors.counting()
-                        )
-                );
-
-        Map<String, Long> finalMap = new LinkedHashMap<>();
-
-        //Sort a map and add to finalMap
-        result.entrySet().stream()
-                .sorted(Map.Entry.<String, Long>comparingByValue()
-                        .reversed()).forEachOrdered(e -> finalMap.put(e.getKey(), e.getValue()));
-
-        List<PersonaResponse.Item> items = new LinkedList<>();
-        for (Map.Entry<String, Long> entry : finalMap.entrySet()) {
-            items.add(new PersonaResponse.Item(entry.getKey(), (double) entry.getValue() / results.size()));
-        }
-
-        return items;
-    }
-
     private int getSentiment(String text) {
         final String uri = "http://localhost:8081/sentimentAnalysis/reviews/calcRating";
 
@@ -406,19 +291,20 @@ public class ReviewController {
     @EventListener(ApplicationReadyEvent.class)
     public void initialize() {
         // do not train model before having at least 2 examples per persona (throws exception)
-        naturalLanguageProcessor.train("de");
-        wekaPersonaDetection.train("de");
-        //compareAlgorithms();
+        Result nlpResult = naturalLanguageProcessor.calcAccuracy("de");
+        //compareAlgorithms(nlpResult.getTotalPersonaAnalysis());
 
         //updateReviewSentiment();
 
-        Result wekaResult = wekaPersonaDetection.calcAccuracy("de", null);
-        Result nlpResult = naturalLanguageProcessor.calcAccuracy("de");
+
+        // TODO: Add average product rating to fields
+        wekaPersonaDetection.train("de", nlpResult.getTotalPersonaAnalysis());
+        Result wekaResult = wekaPersonaDetection.calcAccuracy("de", null, nlpResult.getTotalPersonaAnalysis());
         statsRepository.deleteByLang("de");
         statsRepository.save(new Stats("de", wekaResult.getAccuracy(), nlpResult.getAccuracy(), wekaResult.getPersonaAccuracies(), nlpResult.getPersonaAccuracies()));
     }
 
-    private void compareAlgorithms() {
+    private void compareAlgorithms(Map<Long, Map<String, Double>> totalPersonaAnalysis) {
         List<Classifier> classifiers = new LinkedList<>();
         classifiers.add(new ClassificationViaRegression()); // new first place
         classifiers.add(new DecisionTable());
@@ -483,7 +369,7 @@ public class ReviewController {
 
         for (Classifier classifier : classifiers) {
             System.out.println("using " + classifier.getClass().getName());
-            Result result = wekaPersonaDetection.calcAccuracy("de", classifier);
+            Result result = wekaPersonaDetection.calcAccuracy("de", classifier, totalPersonaAnalysis);
             accuracies.add(new ClassifierAccuracy(result.getAccuracy(), result.getTime(), classifier));
         }
 
@@ -519,14 +405,20 @@ public class ReviewController {
     }
 
     public static class Result {
+        private Map<Long, Map<String, Double>> totalPersonaAnalysis;
         private Map<String, Double> personaAccuracies;
         private double accuracy;
         private long time;
 
-        public Result(Map<String, Double> personaAccuracies, double  accuracy, long time) {
+        public Result(Map<Long, Map<String, Double>> totalPersonaAnalysis, Map<String, Double> personaAccuracies, double  accuracy, long time) {
+            this.totalPersonaAnalysis = totalPersonaAnalysis;
             this.personaAccuracies = personaAccuracies;
             this.accuracy = accuracy;
             this.time = time;
+        }
+
+        public Map<Long, Map<String, Double>> getTotalPersonaAnalysis() {
+            return totalPersonaAnalysis;
         }
 
         public Map<String, Double> getPersonaAccuracies() {

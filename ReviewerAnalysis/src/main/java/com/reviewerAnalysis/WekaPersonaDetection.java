@@ -9,7 +9,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 import weka.classifiers.Classifier;
-import weka.classifiers.meta.ClassificationViaRegression;
+import weka.classifiers.functions.SimpleLogistic;
 import weka.core.Instances;
 import weka.core.converters.ConverterUtils;
 
@@ -28,7 +28,7 @@ public class WekaPersonaDetection {
     @Autowired
     ReviewRepository reviewRepository;
 
-    private ClassificationViaRegression classifier;
+    private SimpleLogistic classifier;
 
     private Instances train;
 
@@ -36,16 +36,15 @@ public class WekaPersonaDetection {
 
     private boolean isCalculating;
 
-    private WekaPersonaDetection() {
-    }
+    private WekaPersonaDetection() {}
 
     public boolean isCalculating() {
         return isCalculating;
     }
 
-    public ReviewController.Result calcAccuracy(String lang, Classifier classifier) {
+    public ReviewController.Result calcAccuracy(String lang, Classifier classifier, Map<Long, Map<String, Double>> nlpResults) {
         isCalculating = true;
-        Classifier defaultClassifier = new ClassificationViaRegression();
+        Classifier defaultClassifier = new SimpleLogistic();
         if (classifier == null) {
             classifier = defaultClassifier;
         }
@@ -65,25 +64,20 @@ public class WekaPersonaDetection {
                 String fileName = "accuracy-test-" + lang + ".arff";
                 List<Review> list = reviewRepository.findByLangAndIsForTraining(lang, true);
                 list.remove(reviews.get(i));
-                writeFile(fileName, lang, list);
+                writeFile(fileName, lang, list, nlpResults);
 
                 ConverterUtils.DataSource source1 = new ConverterUtils.DataSource("accuracy-test-" + lang + ".arff");
                 accuracyTrain = source1.getDataSet();
                 if (accuracyTrain.classIndex() == -1) {
                     accuracyTrain.setClassIndex(accuracyTrain.numAttributes() - 1);
                 }
-
                 classifier.buildClassifier(accuracyTrain);
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
 
-            try {
 
-                String fileName = "predict-accuracy-" + lang + ".arff";
+                fileName = "predict-accuracy-" + lang + ".arff";
                 List<Review> predictAccuracy = new LinkedList<>();
                 predictAccuracy.add(reviews.get(i));
-                writeFile(fileName, lang, predictAccuracy);
+                writeFile(fileName, lang, predictAccuracy, nlpResults);
 
                 ConverterUtils.DataSource source2 = new ConverterUtils.DataSource(fileName);
                 Instances prediction = source2.getDataSet();
@@ -97,9 +91,11 @@ public class WekaPersonaDetection {
                     double label = classifier.classifyInstance(prediction.instance(j));
                     prediction.instance(j).setClassValue(label);
                     String result = prediction.instance(j).stringValue(prediction.numAttributes() - 1);
-                    //System.out.println(persona);
+
                     personas.add(result);
                 }
+
+
 
                 if (personas.get(0).equals(reviews.get(i).getPersona())) {
                     correct++;
@@ -127,13 +123,13 @@ public class WekaPersonaDetection {
         }
 
         isCalculating = false;
-        return new ReviewController.Result(personaAccuracies, accuracy, System.currentTimeMillis() - start);
+        return new ReviewController.Result(null, personaAccuracies, accuracy, System.currentTimeMillis() - start);
     }
 
-    public void train(String lang) {
+    public void train(String lang, Map<Long, Map<String, Double>> nlpResults) {
         try {
             String fileName = "train-" + lang + ".arff";
-            writeFile(fileName, lang, reviewRepository.findByLangAndIsForTraining(lang, true));
+            writeFile(fileName, lang, reviewRepository.findByIdInAndLangAndIsForTraining(new LinkedList<>(nlpResults.keySet()), lang, true), nlpResults);
 
             ConverterUtils.DataSource source1 = new ConverterUtils.DataSource("train-" + lang + ".arff");
             train = source1.getDataSet();
@@ -141,7 +137,7 @@ public class WekaPersonaDetection {
                 train.setClassIndex(train.numAttributes() - 1);
             }
 
-            classifier = new ClassificationViaRegression();
+            classifier = new SimpleLogistic();
             classifier.buildClassifier(train);
             System.out.println(classifier.getBatchSize());
             System.out.println(classifier);
@@ -151,7 +147,7 @@ public class WekaPersonaDetection {
     }
 
 
-    public List<String> detectPersona(List<Review> reviews) {
+    public Map<String, Double> detectPersona(List<Review> reviews, Map<Long, Map<String, Double>> nlpResults) {
         try {
             Iterator<Review> iterator = reviews.iterator();
             while(iterator.hasNext()) {
@@ -159,7 +155,7 @@ public class WekaPersonaDetection {
             }
             String lang = reviews.get(0).getLang();
             String fileName = "predict-" + lang + ".arff";
-            writeFile(fileName, lang, reviews);
+            writeFile(fileName, lang, reviews, nlpResults);
 
             ConverterUtils.DataSource source2 = new ConverterUtils.DataSource(fileName);
             Instances prediction = source2.getDataSet();
@@ -168,23 +164,27 @@ public class WekaPersonaDetection {
                 prediction.setClassIndex(train.numAttributes() - 1);
             }
 
-            List<String> personas = new LinkedList<>();
+            Map<String, Double> result = new HashMap<>();
             for (int i = 0; i < prediction.numInstances(); i++) {
                 double label = classifier.classifyInstance(prediction.instance(i));
                 prediction.instance(i).setClassValue(label);
                 String persona = prediction.instance(i).stringValue(prediction.numAttributes() - 1);
                 System.out.println(persona);
-                personas.add(persona);
+                double[] percentages = classifier.distributionForInstance(prediction.instance(i));
+                for (int j = 0; j < percentages.length; j++) {
+                    double value = i == 0 ? percentages[j] : percentages[j] + result.get(accuracyTrain.classAttribute().value(j));
+                    result.put(accuracyTrain.classAttribute().value(j), value);
+                }
             }
 
-            return personas;
+            return result;
         } catch (Exception e) {
             e.printStackTrace();
             return null;
         }
     }
 
-    private void writeFile(String fileName, String lang, List<Review> reviews) {
+    private void writeFile(String fileName, String lang, List<Review> reviews, Map<Long, Map<String, Double>> nlpResults) {
         InputStream dataIn = null;
         try {
             BufferedWriter writer = new BufferedWriter(new FileWriter(fileName));
@@ -214,6 +214,11 @@ public class WekaPersonaDetection {
                 string += stats.getExclMarks() + ",";
                 string += stats.getLineBreakTextRatio() + ",";
                 string += stats.getPunctuationLetterRatio() + ",";
+
+                for (Persona persona : personaRepository.findAllByOrderByIdAsc()) {
+                    string += nlpResults.get(review.getId()).get(persona.getName()) + ",";
+                }
+
                 string += review.getPersona() == null ? "?" : review.getPersona();
                 writer.write(string + "\n");
             }
@@ -240,24 +245,29 @@ public class WekaPersonaDetection {
         personas += String.join(",", personaNames) + "}";
 
         writer.write("@RELATION reviews-" + lang + "\n\n");
-        writer.write("@ATTRIBUTE hasPicture             NUMERIC\n");
-        writer.write("@ATTRIBUTE hasVideo               NUMERIC\n");
-        writer.write("@ATTRIBUTE isPurchaseVerified     NUMERIC\n");
-        writer.write("@ATTRIBUTE length                 NUMERIC\n");
-        writer.write("@ATTRIBUTE rating                 NUMERIC\n");
-        writer.write("@ATTRIBUTE sentimentAnalysis      NUMERIC\n");
-        writer.write("@ATTRIBUTE sentimentRatingOffset  NUMERIC\n");
-        writer.write("@ATTRIBUTE consecutiveCaps        NUMERIC\n");
-        //writer.write("@ATTRIBUTE consecutivePeriods     NUMERIC\n");
-        writer.write("@ATTRIBUTE consCapsTextRatio      NUMERIC\n");
-        //writer.write("@ATTRIBUTE consPeriodsTextRatio   NUMERIC\n");
-        writer.write("@ATTRIBUTE distinctWordRatio      NUMERIC\n");
-        writer.write("@ATTRIBUTE averageWordLength      NUMERIC\n");
-        writer.write("@ATTRIBUTE numberOfLineBreaks     NUMERIC\n");
-        writer.write("@ATTRIBUTE numberOfQuestionMarks  NUMERIC\n");
-        writer.write("@ATTRIBUTE numberOfExclMarks      NUMERIC\n");
-        writer.write("@ATTRIBUTE lineBreakTextRatio     NUMERIC\n");
-        writer.write("@ATTRIBUTE punctuationLetterRatio NUMERIC\n");
+        writer.write("@ATTRIBUTE hasPicture                 NUMERIC\n");
+        writer.write("@ATTRIBUTE hasVideo                   NUMERIC\n");
+        writer.write("@ATTRIBUTE isPurchaseVerified         NUMERIC\n");
+        writer.write("@ATTRIBUTE length                     NUMERIC\n");
+        writer.write("@ATTRIBUTE rating                     NUMERIC\n");
+        writer.write("@ATTRIBUTE sentimentAnalysis          NUMERIC\n");
+        writer.write("@ATTRIBUTE sentimentRatingOffset      NUMERIC\n");
+        writer.write("@ATTRIBUTE consecutiveCaps            NUMERIC\n");
+        //writer.write("@ATTRIBUTE consecutivePeriods       NUMERIC\n");
+        writer.write("@ATTRIBUTE consCapsTextRatio          NUMERIC\n");
+        //writer.write("@ATTRIBUTE consPeriodsTextRatio     NUMERIC\n");
+        writer.write("@ATTRIBUTE distinctWordRatio          NUMERIC\n");
+        writer.write("@ATTRIBUTE averageWordLength          NUMERIC\n");
+        writer.write("@ATTRIBUTE numberOfLineBreaks         NUMERIC\n");
+        writer.write("@ATTRIBUTE numberOfQuestionMarks      NUMERIC\n");
+        writer.write("@ATTRIBUTE numberOfExclMarks          NUMERIC\n");
+        writer.write("@ATTRIBUTE lineBreakTextRatio         NUMERIC\n");
+        writer.write("@ATTRIBUTE punctuationLetterRatio     NUMERIC\n");
+
+        for (Persona persona : personaRepository.findAllByOrderByIdAsc()) {
+            writer.write("@ATTRIBUTE nlp" + persona.getName() + "\tNUMERIC\n");
+        }
+
         writer.write("@ATTRIBUTE persona                " + personas + "\n\n");
         writer.write("@DATA\n");
     }

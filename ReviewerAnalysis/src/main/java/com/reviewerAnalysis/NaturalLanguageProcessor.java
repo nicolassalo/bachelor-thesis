@@ -47,6 +47,7 @@ public class NaturalLanguageProcessor {
         isCalculating = true;
         long start = System.currentTimeMillis();
         int correct = 0;
+        Map<Long, Map<String, Double>> totalPersonaAnalysis = new HashMap<>();
         Map<String, Integer> correctCounter = new HashMap<>();
         Map<String, Integer> wrongCounter = new HashMap<>();
         for (Persona persona : personaRepository.findAllByOrderByIdAsc()) {
@@ -92,6 +93,7 @@ public class NaturalLanguageProcessor {
 
             DocumentCategorizerME myCategorizer = new DocumentCategorizerME(accuracyTestModel);
             double[] outcomes = myCategorizer.categorize(editReviewText(reviews.get(i).getReviewText()).split(" "));
+            totalPersonaAnalysis.put(reviews.get(i).getId(), myCategorizer.scoreMap((reviews.get(i).getReviewText()).split(" ")));
             if (myCategorizer.getBestCategory(outcomes).equals(reviews.get(i).getPersona())) {
                 correct++;
                 correctCounter.put(reviews.get(i).getPersona(), correctCounter.get(reviews.get(i).getPersona()) + 1);
@@ -109,10 +111,11 @@ public class NaturalLanguageProcessor {
         }
 
 
+
         System.out.println("Time: " + (System.currentTimeMillis() - start) + " ms");
         System.out.println("Accuracy: " + accuracy);
         isCalculating = false;
-        return new ReviewController.Result(personaAccuracies, accuracy, System.currentTimeMillis() - start);
+        return new ReviewController.Result(totalPersonaAnalysis, personaAccuracies, accuracy, System.currentTimeMillis() - start);
     }
 
     public void train(String lang) {
@@ -151,6 +154,11 @@ public class NaturalLanguageProcessor {
         DocumentCategorizerME myCategorizer = new DocumentCategorizerME(model);
         double[] outcomes = myCategorizer.categorize(editReviewText(text).split(" "));
         return myCategorizer.getBestCategory(outcomes);
+    }
+
+    public Map<String, Double> analyzeText(String text) {
+        DocumentCategorizerME myCategorizer = new DocumentCategorizerME(model);
+        return myCategorizer.scoreMap(editReviewText(text).split(" "));
     }
 
     private String editReviewText(String text) {

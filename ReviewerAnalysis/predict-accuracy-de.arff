@@ -1,22 +1,29 @@
 @RELATION reviews-de
 
-@ATTRIBUTE hasPicture             NUMERIC
-@ATTRIBUTE hasVideo               NUMERIC
-@ATTRIBUTE isPurchaseVerified     NUMERIC
-@ATTRIBUTE length                 NUMERIC
-@ATTRIBUTE rating                 NUMERIC
-@ATTRIBUTE sentimentAnalysis      NUMERIC
-@ATTRIBUTE sentimentRatingOffset  NUMERIC
-@ATTRIBUTE consecutiveCaps        NUMERIC
-@ATTRIBUTE consCapsTextRatio      NUMERIC
-@ATTRIBUTE distinctWordRatio      NUMERIC
-@ATTRIBUTE averageWordLength      NUMERIC
-@ATTRIBUTE numberOfLineBreaks     NUMERIC
-@ATTRIBUTE numberOfQuestionMarks  NUMERIC
-@ATTRIBUTE numberOfExclMarks      NUMERIC
-@ATTRIBUTE lineBreakTextRatio     NUMERIC
-@ATTRIBUTE punctuationLetterRatio NUMERIC
+@ATTRIBUTE hasPicture                 NUMERIC
+@ATTRIBUTE hasVideo                   NUMERIC
+@ATTRIBUTE isPurchaseVerified         NUMERIC
+@ATTRIBUTE length                     NUMERIC
+@ATTRIBUTE rating                     NUMERIC
+@ATTRIBUTE sentimentAnalysis          NUMERIC
+@ATTRIBUTE sentimentRatingOffset      NUMERIC
+@ATTRIBUTE consecutiveCaps            NUMERIC
+@ATTRIBUTE consCapsTextRatio          NUMERIC
+@ATTRIBUTE distinctWordRatio          NUMERIC
+@ATTRIBUTE averageWordLength          NUMERIC
+@ATTRIBUTE numberOfLineBreaks         NUMERIC
+@ATTRIBUTE numberOfQuestionMarks      NUMERIC
+@ATTRIBUTE numberOfExclMarks          NUMERIC
+@ATTRIBUTE lineBreakTextRatio         NUMERIC
+@ATTRIBUTE punctuationLetterRatio     NUMERIC
+@ATTRIBUTE nlpExpert	NUMERIC
+@ATTRIBUTE nlpWaitingForMrPerfect	NUMERIC
+@ATTRIBUTE nlpNoDemands	NUMERIC
+@ATTRIBUTE nlpBeatingAroundTheBush	NUMERIC
+@ATTRIBUTE nlpRager	NUMERIC
+@ATTRIBUTE nlpEuphoric	NUMERIC
+@ATTRIBUTE nlpComplainer	NUMERIC
 @ATTRIBUTE persona                {Expert,Rager,Euphoric,Complainer,WaitingForMrPerfect,BeatingAroundTheBush,NoDemands}
 
 @DATA
-0,0,1,688,5,5,5,34,0.04941860465116279,0.7894736842105263,6.035087719298246,0,0,5,0.0,0.043859649122807015,Euphoric
+0,0,1,469,1,5,9,0,0.0,0.7945205479452054,6.424657534246576,0,0,0,0.0,0.0,0.20303770836024637,0.1804946244398732,0.11406127873443336,0.14132771772360248,0.11299579739915146,0.10450233801594151,0.14358053532675172,Expert

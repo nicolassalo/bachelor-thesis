@@ -1,26 +1,20 @@
 package com.reviewerAnalysis.model;
 
-import java.util.LinkedList;
-import java.util.List;
+import java.util.Map;
 
 public class PersonaResponse {
 
     private int ignored;
-    private List<Item> personasByReviewVariables;
-    private List<Item> personasByLanguageProcessing;
-
-    private Item result;
-
     private int activeness;
     private int elaborateness;
 
-    public PersonaResponse(int ignored, List<Item> personasByLanguageProcessing, List<Item> personasByReviewVariables, Item result, int activeness, int elaborateness) {
+    private Map<String, Double> results;
+
+    public PersonaResponse(int ignored, int activeness, int elaborateness, Map<String, Double> results) {
         this.ignored = ignored;
-        this.personasByLanguageProcessing = personasByLanguageProcessing;
-        this.personasByReviewVariables = personasByReviewVariables;
-        this.result = result;
         this.activeness = activeness;
         this.elaborateness = elaborateness;
+        this.results = results;
     }
 
     public int getActiveness() {
@@ -35,34 +29,7 @@ public class PersonaResponse {
         return ignored;
     }
 
-    public List<Item> getPersonasByReviewVariables() {
-        return personasByReviewVariables;
-    }
-
-    public List<Item> getPersonasByLanguageProcessing() {
-        return personasByLanguageProcessing;
-    }
-
-    public Item getResult() {
-        return result;
-    }
-
-    public static class Item {
-
-        private String persona;
-        private double confidence;
-
-        public Item(String persona, double confidence) {
-            this.persona = persona;
-            this.confidence = confidence;
-        }
-
-        public String getPersona() {
-            return persona;
-        }
-
-        public double getConfidence() {
-            return confidence;
-        }
+    public Map<String, Double> getResults() {
+        return results;
     }
 }
