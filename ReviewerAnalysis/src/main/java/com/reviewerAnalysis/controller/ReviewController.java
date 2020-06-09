@@ -193,7 +193,7 @@ public class ReviewController {
         wekaResults = wekaResults.entrySet()
                 .stream()
                 .sorted(Map.Entry.comparingByValue())
-                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue, (e1, e2) -> e1, LinkedHashMap::new));
+                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue, (e2, e1) -> e1, LinkedHashMap::new));
 
 
         PersonaResponse response = new PersonaResponse(reviewWrapper.getReviews().size() - reviews.size(), calculateActiveness(reviews),calculateElaborateness(reviews), wekaResults);
@@ -291,14 +291,13 @@ public class ReviewController {
     @EventListener(ApplicationReadyEvent.class)
     public void initialize() {
         // do not train model before having at least 2 examples per persona (throws exception)
-        Result nlpResult = naturalLanguageProcessor.calcAccuracy("de");
         naturalLanguageProcessor.train("de");
-        //compareAlgorithms(nlpResult.getTotalPersonaAnalysis());
 
+        //compareAlgorithms(nlpResult.getTotalPersonaAnalysis());
         //updateReviewSentiment();
 
-
         // TODO: Add average product rating to fields
+        Result nlpResult = naturalLanguageProcessor.calcAccuracy("de");
         wekaPersonaDetection.train("de", nlpResult.getTotalPersonaAnalysis());
         Result wekaResult = wekaPersonaDetection.calcAccuracy("de", null, nlpResult.getTotalPersonaAnalysis());
         statsRepository.deleteByLang("de");

@@ -5,6 +5,7 @@ import com.reviewerAnalysis.data.Persona;
 import com.reviewerAnalysis.data.PersonaRepository;
 import com.reviewerAnalysis.data.Review;
 import com.reviewerAnalysis.data.ReviewRepository;
+import opennlp.tools.ml.perceptron.PerceptronTrainer;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
@@ -175,6 +176,11 @@ public class WekaPersonaDetection {
                     double value = i == 0 ? percentages[j] : percentages[j] + result.get(accuracyTrain.classAttribute().value(j));
                     result.put(accuracyTrain.classAttribute().value(j), value);
                 }
+            }
+
+            // Normalize probabilities
+            for (Persona persona : personaRepository.findAllByOrderByIdAsc()) {
+                result.put(persona.getName(), result.get(persona.getName()) / reviews.size());
             }
 
             return result;

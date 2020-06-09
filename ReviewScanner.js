@@ -23,7 +23,7 @@
     });
 
     const scrapeInterval = 1000; // ms
-    const maxReviewAmount = 10;
+    const maxReviewAmount = 20;
 
     // wait for elements to be loaded
     setTimeout(function() {
@@ -190,7 +190,8 @@
                         }),
                         success: function (response) {
                             console.log(response);
-                            //alert("Detected persona: " + response.result.persona + ": " + Math.round(response.result.confidence * 100) + " %");
+                            var persona = Object.keys(response.results)[0];
+                            alert("Detected persona: " + persona + ": " + Math.round(response.results[persona] * 100) + " %");
                         },
                         error: function (error) {
                             alert(error.responseJSON.message);
