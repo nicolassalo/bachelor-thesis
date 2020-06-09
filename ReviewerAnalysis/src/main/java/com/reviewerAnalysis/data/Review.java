@@ -22,6 +22,8 @@ public class Review {
 
     private int rating;
 
+    private double averageProductRating;
+
     private int length;
 
     private boolean hasPicture;
@@ -52,10 +54,11 @@ public class Review {
 
     private boolean isForTraining; // for being able to save reviewers' reviews while also collecting training data
 
-    public Review(Long timestamp, Long timeSincePreviousReview, int rating, int length, boolean hasPicture, boolean hasVideo, boolean isPurchaseVerified, int sentimentAnalysis, String reviewText, String lang, String password, String persona, boolean isForTraining) {
+    public Review(Long timestamp, Long timeSincePreviousReview, int rating, double averageProductRating, int length, boolean hasPicture, boolean hasVideo, boolean isPurchaseVerified, int sentimentAnalysis, String reviewText, String lang, String password, String persona, boolean isForTraining) {
         this.timestamp = timestamp;
         this.timeSincePreviousReview = timeSincePreviousReview;
         this.rating = rating;
+        this.averageProductRating = averageProductRating;
         this.length = length;
         this.hasPicture = hasPicture;
         this.hasVideo = hasVideo;
@@ -100,6 +103,14 @@ public class Review {
 
     public void setRating(int rating) {
         this.rating = rating;
+    }
+
+    public double getAverageProductRating() {
+        return averageProductRating;
+    }
+
+    public void setAverageProductRating(double averageProductRating) {
+        this.averageProductRating = averageProductRating;
     }
 
     public boolean isHasPicture() {

@@ -4,6 +4,7 @@ public class ReviewModel {
 
     private long timestamp;
     private int rating;
+    private double averageProductRating;
     private String reviewText;
 
     // null if no previous review
@@ -18,9 +19,10 @@ public class ReviewModel {
 
     private String persona;
 
-    public ReviewModel(long timestamp, int rating, String reviewText, Long timeSincePreviousReview, boolean hasPicture, boolean hasVideo, boolean isPurchaseVerified, String persona) {
+    public ReviewModel(long timestamp, int rating, double averageProductRating, String reviewText, Long timeSincePreviousReview, boolean hasPicture, boolean hasVideo, boolean isPurchaseVerified, String persona) {
         this.timestamp = timestamp;
         this.rating = rating;
+        this.averageProductRating = averageProductRating;
         this.reviewText = reviewText;
         this.timeSincePreviousReview = timeSincePreviousReview;
         this.hasPicture = hasPicture;
@@ -31,6 +33,10 @@ public class ReviewModel {
 
     public int getRating() {
         return rating;
+    }
+
+    public double getAverageProductRating() {
+        return averageProductRating;
     }
 
     public String getReviewText() {

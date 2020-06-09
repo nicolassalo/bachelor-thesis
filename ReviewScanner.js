@@ -223,6 +223,9 @@
     }
 
     function collectPersonaVariables(parent) {
+
+        var averageProductRating = $(".averageStarRating").text();
+        averageProductRating = parseFloat(averageProductRating.substr(0, averageProductRating.indexOf(" ")).replace(",","."));
         // pass parent element for sites with multiple reviews
         var timestamp = moment(parent.find(".review-date").text(), "DD MMM YYYY").unix();
         var datePreviousReview = getUrlParam("previousReview");
@@ -252,6 +255,7 @@
         return {
             timestamp: timestamp,
             rating: rating,
+            averageProductRating: averageProductRating,
             reviewText: reviewText,
             timeSincePreviousReview: timeSincePreviousReview,
             hasPicture: hasImage,
