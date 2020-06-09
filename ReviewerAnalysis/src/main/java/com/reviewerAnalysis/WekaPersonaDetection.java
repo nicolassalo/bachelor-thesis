@@ -200,7 +200,12 @@ public class WekaPersonaDetection {
             for (Review review : reviews) {
                 Stats stats = calculateTextStats(review.getReviewText());
                 int sentimentRatingOffset = review.getSentimentAnalysis() - review.getRating();
-                sentimentRatingOffset += 5; // Some classifiers cannot deal with negative numbers
+                double productRatingOffset = review.getAverageProductRating() - review.getRating();
+
+                // Some classifiers cannot deal with negative numbers
+                sentimentRatingOffset += 5;
+                productRatingOffset += 5;
+
                 String string = "";
                 string += (review.isHasPicture() ? 1 : 0) + ",";
                 string += (review.isHasVideo() ? 1 : 0) + ",";
@@ -209,6 +214,8 @@ public class WekaPersonaDetection {
                 string += review.getRating() + ",";
                 string += review.getSentimentAnalysis() + ",";
                 string += sentimentRatingOffset + ",";
+                string += review.getAverageProductRating() + ",";
+                string += productRatingOffset + ",";
                 string += stats.getConsecutiveCaps() + ",";
                 //string += stats.getConsecutivePeriods() + ",";
                 string += stats.getConsCapsTextRatio() + ",";
@@ -222,7 +229,8 @@ public class WekaPersonaDetection {
                 string += stats.getPunctuationLetterRatio() + ",";
 
                 for (Persona persona : personaRepository.findAllByOrderByIdAsc()) {
-                    string += nlpResults.get(review.getId()).get(persona.getName()) + ",";
+                    double value = nlpResults.get(review.getId()).get(persona.getName());
+                    string += value + ",";
                 }
 
                 string += review.getPersona() == null ? "?" : review.getPersona();
@@ -244,7 +252,7 @@ public class WekaPersonaDetection {
 
     private void writeBasis(BufferedWriter writer, String lang) throws IOException {
         List<String> personaNames = new LinkedList<>();
-        for (Persona persona : personaRepository.findAll()) {
+        for (Persona persona : personaRepository.findAllByOrderByIdAsc()) {
             personaNames.add(persona.getName());
         }
         String personas = "{";
@@ -258,6 +266,8 @@ public class WekaPersonaDetection {
         writer.write("@ATTRIBUTE rating                     NUMERIC\n");
         writer.write("@ATTRIBUTE sentimentAnalysis          NUMERIC\n");
         writer.write("@ATTRIBUTE sentimentRatingOffset      NUMERIC\n");
+        writer.write("@ATTRIBUTE averageProductRating       NUMERIC\n");
+        writer.write("@ATTRIBUTE productRatingOffset        NUMERIC\n");
         writer.write("@ATTRIBUTE consecutiveCaps            NUMERIC\n");
         //writer.write("@ATTRIBUTE consecutivePeriods       NUMERIC\n");
         writer.write("@ATTRIBUTE consCapsTextRatio          NUMERIC\n");

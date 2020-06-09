@@ -66,7 +66,7 @@ public class NaturalLanguageProcessor {
                 counter++;
             }
 
-            MarkableFileInputStreamFactory dataIn = null;
+            MarkableFileInputStreamFactory dataIn;
             try {
                 BufferedWriter writer = new BufferedWriter(new FileWriter("nlp-accuracy-testing-" + lang + ".txt"));
                 for (String string : trainingData) {

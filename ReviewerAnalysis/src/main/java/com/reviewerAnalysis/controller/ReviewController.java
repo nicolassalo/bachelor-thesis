@@ -290,12 +290,12 @@ public class ReviewController {
     public void initialize() {
         // do not train model before having at least 2 examples per persona (throws exception)
         naturalLanguageProcessor.train("de");
+        Result nlpResult = naturalLanguageProcessor.calcAccuracy("de");
 
-        //compareAlgorithms(nlpResult.getTotalPersonaAnalysis());
+        compareAlgorithms(nlpResult.getTotalPersonaAnalysis());
         //updateReviewSentiment();
 
         // TODO: Add average product rating to fields
-        Result nlpResult = naturalLanguageProcessor.calcAccuracy("de");
         wekaPersonaDetection.train("de", nlpResult.getTotalPersonaAnalysis());
         Result wekaResult = wekaPersonaDetection.calcAccuracy("de", null, nlpResult.getTotalPersonaAnalysis());
         statsRepository.deleteByLang("de");
@@ -306,11 +306,12 @@ public class ReviewController {
         List<Classifier> classifiers = new LinkedList<>();
         classifiers.add(new ClassificationViaRegression()); // new first place
         classifiers.add(new DecisionTable());
-        classifiers.add(new LMT());
+        //classifiers.add(new LMT()); // very slow
         classifiers.add(new SimpleLogistic()); // shared first place but slower (maybe because memory was getting full)
-        classifiers.add(new LogisticBase()); // shared first place but faster (maybe because memory was getting full)
-        classifiers.add(new RandomForest());
-        classifiers.add(new BayesNet());
+        //classifiers.add(new LogisticBase()); // shared first place but faster (maybe because memory was getting full)
+        //classifiers.add(new RandomForest());
+        //classifiers.add(new BayesNet());
+        classifiers.add(new AttributeSelectedClassifier());
         /*
         classifiers.add(new NaiveBayesMultinomial()); // cannot deal with negative numbers
         classifiers.add(new NaiveBayesMultinomialUpdateable()); // cannot deal with negative numbers
