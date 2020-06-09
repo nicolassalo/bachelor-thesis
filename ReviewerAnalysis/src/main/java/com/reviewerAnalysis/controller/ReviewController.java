@@ -192,8 +192,8 @@ public class ReviewController {
         Map<String, Double> wekaResults = wekaPersonaDetection.detectPersona(reviews, totalNlpResults);
         wekaResults = wekaResults.entrySet()
                 .stream()
-                .sorted(Map.Entry.comparingByValue())
-                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue, (e2, e1) -> e1, LinkedHashMap::new));
+                .sorted(Map.Entry.comparingByValue(Comparator.reverseOrder()))
+                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue, (e1, e2) -> e1, LinkedHashMap::new));
 
 
         PersonaResponse response = new PersonaResponse(reviewWrapper.getReviews().size() - reviews.size(), calculateActiveness(reviews),calculateElaborateness(reviews), wekaResults);
