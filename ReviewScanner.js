@@ -1,5 +1,5 @@
 // ==UserScript==
-// @name         New Userscript
+// @name         Review Scanner
 // @namespace    http://tampermonkey.net/
 // @version      0.1
 // @description  try to take over the world!
@@ -183,11 +183,14 @@
                 checkElement.click(function () {
                     $.ajax({
                         method: "POST",
-                        url: baseUrl + "/reviewerAnalysis/analyzeReview",
-                        data: JSON.stringify(collectPersonaVariables(parent)),
+                        url: baseUrl + "/reviewerAnalysis/",
+                        //data: JSON.stringify(collectPersonaVariables(parent)),
+                        data: JSON.stringify({
+                            reviews: [collectPersonaVariables(parent)]
+                        }),
                         success: function (response) {
                             console.log(response);
-                            alert("Detected persona: " + response.result.persona + ": " + Math.round(response.result.confidence * 100) + " %");
+                            //alert("Detected persona: " + response.result.persona + ": " + Math.round(response.result.confidence * 100) + " %");
                         },
                         error: function (error) {
                             alert(error.responseJSON.message);

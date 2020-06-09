@@ -292,6 +292,7 @@ public class ReviewController {
     public void initialize() {
         // do not train model before having at least 2 examples per persona (throws exception)
         Result nlpResult = naturalLanguageProcessor.calcAccuracy("de");
+        naturalLanguageProcessor.train("de");
         //compareAlgorithms(nlpResult.getTotalPersonaAnalysis());
 
         //updateReviewSentiment();
