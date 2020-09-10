@@ -29,6 +29,9 @@ import weka.classifiers.trees.lmt.LogisticBase;
 
 import javax.transaction.Transactional;
 import javax.validation.Valid;
+import java.io.BufferedWriter;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.sql.SQLOutput;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -52,6 +55,9 @@ public class ReviewController {
 
     @Autowired
     StatsRepository statsRepository;
+
+    @Autowired
+    AnalysisRepository analysisRepository;
 
     @Autowired
     WekaPersonaDetection wekaPersonaDetection;
@@ -334,16 +340,23 @@ public class ReviewController {
 
     }
 
+    // TODO: chart: 2 bars per persona showing activeness and elaborateness
     private void analyzeReviewers() {
         List<Persona> personas = personaRepository.findAll();
         List<Reviewer> reviewers = reviewerRepository.findAll();
         Map<String, Integer> personaIndexMap = new HashMap<>();
+        List<String> output = new LinkedList<>();
+        String line = "ID";
         int index = 0;
         for (Persona persona : personas) {
             personaIndexMap.put(persona.getName(), index);
             index++;
+            line += "," + persona.getName();
         }
         double[] likelihoods = new double[personas.size()];
+        output.add(line + "\n");
+
+        int[] personaWinCount = new int[personas.size()];
 
         for (Reviewer reviewer: reviewers) {
             Map<Long, Map<String, Double>> totalNlpResults = new HashMap<>();
@@ -352,11 +365,40 @@ public class ReviewController {
             }
 
             Map<String, Double> wekaResults = wekaPersonaDetection.detectPersona(reviewer.getReviews(), totalNlpResults);
+            wekaResults = wekaResults.entrySet()
+                    .stream()
+                    .sorted(Map.Entry.comparingByValue(Comparator.reverseOrder()))
+                    .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue, (e1, e2) -> e1, LinkedHashMap::new));
+
+            line = reviewer.getId() + "";
             for (Persona persona : personas) {
                 Integer personaIndex = personaIndexMap.get(persona.getName());
                 Double result = wekaResults.get(persona.getName());
                 likelihoods[personaIndex] += result;
+                line += "," + result;
             }
+            output.add(line + "\n");
+
+
+            String[] keys = (String[]) wekaResults.keySet().toArray(new String[0]);
+            Analysis analysis = new Analysis(keys[0], keys[1], keys[2], keys[3], keys[4], keys[5], keys[keys.length - 1], wekaResults.get(keys[0]), wekaResults.get(keys[1]), wekaResults.get(keys[2]), wekaResults.get(keys[3]), wekaResults.get(keys[4]), wekaResults.get(keys[5]), wekaResults.get(keys[keys.length - 1]));
+            analysisRepository.save(analysis);
+
+            String winner = keys[0];
+            personaWinCount[personaIndexMap.get(winner)]++;
+            for (Persona persona : personas) {
+                System.out.println(persona.getName() + ": " + personaWinCount[personaIndexMap.get(persona.getName())]);
+            }
+        }
+
+        try {
+            BufferedWriter writer = new BufferedWriter(new FileWriter("reviewerAnalysis.csv"));
+            for (String string : output) {
+                writer.write(string);
+            }
+            writer.close();
+        } catch (IOException e) {
+            e.printStackTrace();
         }
 
         System.out.println("ReviewerAnalysis:");
