@@ -1,4 +1,4 @@
-package com.salomon.languagedetection;
+package com.services;
 
 import opennlp.tools.langdetect.*;
 import opennlp.tools.util.*;

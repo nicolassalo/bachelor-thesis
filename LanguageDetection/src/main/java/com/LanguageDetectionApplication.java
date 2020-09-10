@@ -1,5 +1,6 @@
-package com.salomon.languagedetection;
+package com;
 
+import com.services.LanguageDetector;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.context.event.ApplicationReadyEvent;

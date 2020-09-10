@@ -1,11 +1,8 @@
-package com.salomon.languagedetection.controller;
+package com.controller;
 
-import com.salomon.languagedetection.LanguageDetector;
-import com.salomon.languagedetection.model.ResponseMessage;
-import com.salomon.languagedetection.model.TextModel;
+import com.services.LanguageDetector;
+import com.model.TextModel;
 import opennlp.tools.langdetect.Language;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import javax.validation.Valid;

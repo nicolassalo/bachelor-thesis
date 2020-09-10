@@ -11,6 +11,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 import weka.classifiers.Classifier;
 import weka.classifiers.functions.SimpleLogistic;
+import weka.classifiers.meta.ClassificationViaRegression;
+import weka.classifiers.rules.DecisionTable;
 import weka.core.Instances;
 import weka.core.converters.ConverterUtils;
 
@@ -29,7 +31,7 @@ public class WekaPersonaDetection {
     @Autowired
     ReviewRepository reviewRepository;
 
-    private SimpleLogistic classifier;
+    private ClassificationViaRegression classifier;
 
     private Instances train;
 
@@ -45,7 +47,7 @@ public class WekaPersonaDetection {
 
     public ReviewController.Result calcAccuracy(String lang, Classifier classifier, Map<Long, Map<String, Double>> nlpResults) {
         isCalculating = true;
-        Classifier defaultClassifier = new SimpleLogistic();
+        Classifier defaultClassifier = new ClassificationViaRegression();
         if (classifier == null) {
             classifier = defaultClassifier;
         }
@@ -138,7 +140,7 @@ public class WekaPersonaDetection {
                 train.setClassIndex(train.numAttributes() - 1);
             }
 
-            classifier = new SimpleLogistic();
+            classifier = new ClassificationViaRegression();
             classifier.buildClassifier(train);
             System.out.println(classifier.getBatchSize());
             System.out.println(classifier);
@@ -199,12 +201,11 @@ public class WekaPersonaDetection {
 
             for (Review review : reviews) {
                 Stats stats = calculateTextStats(review.getReviewText());
-                int sentimentRatingOffset = review.getSentimentAnalysis() - review.getRating();
-                double productRatingOffset = review.getAverageProductRating() - review.getRating();
+                // Some classifiers cannot deal with negative numbers -> add + 5
+                int sentimentRatingOffset = review.getSentimentAnalysis() - review.getRating() + 5;
+                String averageProductRating = review.getAverageProductRating() > 0 ? review.getAverageProductRating() + "" : "?";
+                String productRatingOffset = review.getAverageProductRating() > 0 ? (review.getAverageProductRating() - review.getRating() + 5) + "" : "?";
 
-                // Some classifiers cannot deal with negative numbers
-                sentimentRatingOffset += 5;
-                productRatingOffset += 5;
 
                 String string = "";
                 string += (review.isHasPicture() ? 1 : 0) + ",";
@@ -214,7 +215,7 @@ public class WekaPersonaDetection {
                 string += review.getRating() + ",";
                 string += review.getSentimentAnalysis() + ",";
                 string += sentimentRatingOffset + ",";
-                string += review.getAverageProductRating() + ",";
+                string += averageProductRating + ",";
                 string += productRatingOffset + ",";
                 string += stats.getConsecutiveCaps() + ",";
                 //string += stats.getConsecutivePeriods() + ",";
@@ -230,6 +231,7 @@ public class WekaPersonaDetection {
 
                 for (Persona persona : personaRepository.findAllByOrderByIdAsc()) {
                     double value = nlpResults.get(review.getId()).get(persona.getName());
+                    value = value > 0.5 ? 1 : 0;
                     string += value + ",";
                 }
 

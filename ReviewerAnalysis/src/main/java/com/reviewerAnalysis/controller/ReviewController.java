@@ -13,7 +13,15 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.client.RestTemplate;
 import weka.classifiers.Classifier;
 import weka.classifiers.bayes.BayesNet;
+import weka.classifiers.bayes.NaiveBayesMultinomial;
+import weka.classifiers.bayes.NaiveBayesMultinomialUpdateable;
+import weka.classifiers.bayes.net.BIFReader;
+import weka.classifiers.bayes.net.BayesNetGenerator;
+import weka.classifiers.bayes.net.EditableBayesNet;
 import weka.classifiers.functions.*;
+import weka.classifiers.lazy.IBk;
+import weka.classifiers.lazy.KStar;
+import weka.classifiers.lazy.LWL;
 import weka.classifiers.meta.*;
 import weka.classifiers.rules.*;
 import weka.classifiers.trees.*;
@@ -21,6 +29,7 @@ import weka.classifiers.trees.lmt.LogisticBase;
 
 import javax.transaction.Transactional;
 import javax.validation.Valid;
+import java.sql.SQLOutput;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -151,13 +160,18 @@ public class ReviewController {
      */
     @PostMapping("/")
     public ResponseEntity<?> analyzeReviews(@Valid @RequestBody ReviewModelListWrapper reviewWrapper) {
+        if (reviewWrapper.getReviews().size() == 0) {
+            return new ResponseEntity<>(new ResponseMessage("Review list is empty!"), HttpStatus.BAD_REQUEST);
+        }
         List<Review> reviews = new LinkedList<>();
         boolean saveReviews = true;
         int sumReviewLength = 0;
         long counter = -1;
+        Language previousDetectedLanguage = null;
         for (ReviewModel review : reviewWrapper.getReviews()) {
             if (review.getReviewText().length() < 10000) {
                 Language language = getLanguage(review.getReviewText());
+                previousDetectedLanguage = language;
                 if (language.getLang().equals("de") && language.getConfidence() > 0.95) {
                     Review r = new Review(review.getTimestamp(), review.getTimeSincePreviousReview(), review.getRating(), review.getAverageProductRating(), review.getReviewText().length(), review.isHasPicture(), review.isHasVideo(), review.isPurchaseVerified(), getSentiment(review.getReviewText()), review.getReviewText(), language.getLang(), null, review.getPersona(), false);
                     if (!reviewRepository.existsByReviewTextAndTimestampAndRatingAndIsForTraining(review.getReviewText(), review.getTimestamp(), review.getRating(), false)) {
@@ -170,8 +184,20 @@ public class ReviewController {
                     System.out.println("new review id: " + r.getId());
                     reviews.add(r);
                     sumReviewLength += review.getReviewText().length();
+                } else if (reviewWrapper.getReviews().size() == 1) {
+                    return new ResponseEntity<>(new ResponseMessage("Language might be " + language.getLang() + ", but only " + Math.round(language.getConfidence() * 100) + " % confident!"), HttpStatus.BAD_REQUEST);
                 }
+            } else if (reviewWrapper.getReviews().size() == 1) {
+                // Should never happen. Amazon reviews are limited to 5000 characters
+                return new ResponseEntity<>(new ResponseMessage("Text is too long!"), HttpStatus.BAD_REQUEST);
             }
+        }
+
+        if (reviews.size() == 0) {
+            if (previousDetectedLanguage == null) {
+                return new ResponseEntity<>(new ResponseMessage("Text is too long!"), HttpStatus.BAD_REQUEST);
+            }
+            return new ResponseEntity<>(new ResponseMessage("Language might be " + previousDetectedLanguage.getLang() + ", but only " + Math.round(previousDetectedLanguage.getConfidence() * 100) + " % confident!"), HttpStatus.BAD_REQUEST);
         }
 
         if (reviews.size() >= 10 && saveReviews) {
@@ -282,36 +308,75 @@ public class ReviewController {
 
         ResponseEntity<Language[]> response = restTemplate.postForEntity(uri, map, Language[].class);
         Language[] languages = response.getBody();
-        return languages[0];
+         return languages[0];
     }
 
     @Transactional
     @EventListener(ApplicationReadyEvent.class)
     public void initialize() {
         // do not train model before having at least 2 examples per persona (throws exception)
+
         naturalLanguageProcessor.train("de");
         Result nlpResult = naturalLanguageProcessor.calcAccuracy("de");
 
-        compareAlgorithms(nlpResult.getTotalPersonaAnalysis());
+        //compareAlgorithms(nlpResult.getTotalPersonaAnalysis());
         //updateReviewSentiment();
 
-        // TODO: Add average product rating to fields
         wekaPersonaDetection.train("de", nlpResult.getTotalPersonaAnalysis());
-        Result wekaResult = wekaPersonaDetection.calcAccuracy("de", null, nlpResult.getTotalPersonaAnalysis());
+
+        analyzeReviewers();
+
+
+
+        /*Result wekaResult = wekaPersonaDetection.calcAccuracy("de", null, nlpResult.getTotalPersonaAnalysis());
+        System.out.println(wekaResult.getAccuracy() + ", " + wekaResult.getTime());
         statsRepository.deleteByLang("de");
         statsRepository.save(new Stats("de", wekaResult.getAccuracy(), nlpResult.getAccuracy(), wekaResult.getPersonaAccuracies(), nlpResult.getPersonaAccuracies()));
+
+         */
+    }
+
+    private void analyzeReviewers() {
+        List<Persona> personas = personaRepository.findAll();
+        List<Reviewer> reviewers = reviewerRepository.findAll();
+        Map<String, Integer> personaIndexMap = new HashMap<>();
+        int index = 0;
+        for (Persona persona : personas) {
+            personaIndexMap.put(persona.getName(), index);
+            index++;
+        }
+        double[] likelihoods = new double[personas.size()];
+
+        for (Reviewer reviewer: reviewers) {
+            Map<Long, Map<String, Double>> totalNlpResults = new HashMap<>();
+            for (Review review : reviewer.getReviews()) {
+                totalNlpResults.put(review.getId(), naturalLanguageProcessor.analyzeText(review.getReviewText()));
+            }
+
+            Map<String, Double> wekaResults = wekaPersonaDetection.detectPersona(reviewer.getReviews(), totalNlpResults);
+            for (Persona persona : personas) {
+                likelihoods[personaIndexMap.get(persona)] += wekaResults.get(persona);
+            }
+        }
+
+        System.out.println("ReviewerAnalysis:");
+        index = 0;
+        for (Persona persona : personas) {
+            System.out.println(persona.getName() + ": " + likelihoods[index] / reviewers.size());
+            index++;
+        }
     }
 
     private void compareAlgorithms(Map<Long, Map<String, Double>> totalPersonaAnalysis) {
         List<Classifier> classifiers = new LinkedList<>();
-        classifiers.add(new ClassificationViaRegression()); // new first place
+        classifiers.add(new ClassificationViaRegression());
         classifiers.add(new DecisionTable());
-        //classifiers.add(new LMT()); // very slow
-        classifiers.add(new SimpleLogistic()); // shared first place but slower (maybe because memory was getting full)
-        //classifiers.add(new LogisticBase()); // shared first place but faster (maybe because memory was getting full)
-        //classifiers.add(new RandomForest());
-        //classifiers.add(new BayesNet());
-        classifiers.add(new AttributeSelectedClassifier());
+        classifiers.add(new LMT()); // very slow
+        classifiers.add(new SimpleLogistic());
+        //classifiers.add(new LogisticBase()); // cannot deal with null values
+        classifiers.add(new RandomForest());
+        classifiers.add(new BayesNet());
+
         /*
         classifiers.add(new NaiveBayesMultinomial()); // cannot deal with negative numbers
         classifiers.add(new NaiveBayesMultinomialUpdateable()); // cannot deal with negative numbers
@@ -337,7 +402,6 @@ public class ReviewController {
         classifiers.add(new RandomCommittee());
         classifiers.add(new RandomSubSpace());
         */
-
         /* worst
         classifiers.add(new Stacking());
         classifiers.add(new Vote());
