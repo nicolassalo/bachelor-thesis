@@ -386,9 +386,7 @@ public class ReviewController {
 
             String winner = keys[0];
             personaWinCount[personaIndexMap.get(winner)]++;
-            for (Persona persona : personas) {
-                System.out.println(persona.getName() + ": " + personaWinCount[personaIndexMap.get(persona.getName())]);
-            }
+
         }
 
         try {
@@ -403,9 +401,15 @@ public class ReviewController {
 
         System.out.println("ReviewerAnalysis:");
         index = 0;
+        System.out.println("Rare numbers");
         for (Persona persona : personas) {
             System.out.println(persona.getName() + ": " + likelihoods[index] / reviewers.size());
             index++;
+        }
+
+        System.out.println("Win count");
+        for (Persona persona : personas) {
+            System.out.println(persona.getName() + ": " + personaWinCount[personaIndexMap.get(persona.getName())]);
         }
     }
 
