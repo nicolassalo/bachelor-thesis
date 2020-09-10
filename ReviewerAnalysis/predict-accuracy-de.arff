@@ -7,6 +7,8 @@
 @ATTRIBUTE rating                     NUMERIC
 @ATTRIBUTE sentimentAnalysis          NUMERIC
 @ATTRIBUTE sentimentRatingOffset      NUMERIC
+@ATTRIBUTE averageProductRating       NUMERIC
+@ATTRIBUTE productRatingOffset        NUMERIC
 @ATTRIBUTE consecutiveCaps            NUMERIC
 @ATTRIBUTE consCapsTextRatio          NUMERIC
 @ATTRIBUTE distinctWordRatio          NUMERIC
@@ -26,4 +28,4 @@
 @ATTRIBUTE persona                {Expert,WaitingForMrPerfect,NoDemands,BeatingAroundTheBush,Rager,Euphoric,Complainer}
 
 @DATA
-0,0,1,469,1,5,9,0,0.0,0.7945205479452054,6.424657534246576,0,0,0,0.0,0.0,0.189223402332533,0.1983897985478524,0.12258711429390307,0.14129042563463423,0.12246716975999374,0.10985666500143262,0.11618542442965099,Expert
+0,0,1,469,1,5,9,?,?,0,0.0,0.7945205479452054,6.424657534246576,0,0,0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,Expert

@@ -70,7 +70,7 @@ public class NaturalLanguageProcessor {
             try {
                 BufferedWriter writer = new BufferedWriter(new FileWriter("nlp-accuracy-testing-" + lang + ".txt"));
                 for (String string : trainingData) {
-                    writer.write(string);
+                    writer.write(string.replaceAll("\t", " ").replaceAll("\\t", " "));
                 }
                 writer.close();
 

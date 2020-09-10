@@ -324,16 +324,14 @@ public class ReviewController {
 
         wekaPersonaDetection.train("de", nlpResult.getTotalPersonaAnalysis());
 
-        analyzeReviewers();
 
-
-
-        /*Result wekaResult = wekaPersonaDetection.calcAccuracy("de", null, nlpResult.getTotalPersonaAnalysis());
+        Result wekaResult = wekaPersonaDetection.calcAccuracy("de", null, nlpResult.getTotalPersonaAnalysis());
         System.out.println(wekaResult.getAccuracy() + ", " + wekaResult.getTime());
         statsRepository.deleteByLang("de");
         statsRepository.save(new Stats("de", wekaResult.getAccuracy(), nlpResult.getAccuracy(), wekaResult.getPersonaAccuracies(), nlpResult.getPersonaAccuracies()));
 
-         */
+        analyzeReviewers();
+
     }
 
     private void analyzeReviewers() {
@@ -355,7 +353,9 @@ public class ReviewController {
 
             Map<String, Double> wekaResults = wekaPersonaDetection.detectPersona(reviewer.getReviews(), totalNlpResults);
             for (Persona persona : personas) {
-                likelihoods[personaIndexMap.get(persona)] += wekaResults.get(persona);
+                Integer personaIndex = personaIndexMap.get(persona.getName());
+                Double result = wekaResults.get(persona.getName());
+                likelihoods[personaIndex] += result;
             }
         }
 

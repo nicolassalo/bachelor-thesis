@@ -1,20 +1,40 @@
 @RELATION reviews-de
 
-@ATTRIBUTE hasPicture             NUMERIC
-@ATTRIBUTE hasVideo               NUMERIC
-@ATTRIBUTE isPurchaseVerified     NUMERIC
-@ATTRIBUTE length                 NUMERIC
-@ATTRIBUTE rating                 NUMERIC
-@ATTRIBUTE sentimentAnalysis      NUMERIC
-@ATTRIBUTE sentimentRatingOffset  NUMERIC
-@ATTRIBUTE consecutiveCaps        NUMERIC
-@ATTRIBUTE distinctWordRatio      NUMERIC
-@ATTRIBUTE averageWordLength      NUMERIC
-@ATTRIBUTE numberOfLineBreaks     NUMERIC
-@ATTRIBUTE numberOfQuestionMarks  NUMERIC
-@ATTRIBUTE numberOfExclMarks      NUMERIC
-@ATTRIBUTE persona                {Expert,Rager,Euphoric,Complainer,WaitingForMrPerfect,BeatingAroundTheBush,NoDemands}
+@ATTRIBUTE hasPicture                 NUMERIC
+@ATTRIBUTE hasVideo                   NUMERIC
+@ATTRIBUTE isPurchaseVerified         NUMERIC
+@ATTRIBUTE length                     NUMERIC
+@ATTRIBUTE rating                     NUMERIC
+@ATTRIBUTE sentimentAnalysis          NUMERIC
+@ATTRIBUTE sentimentRatingOffset      NUMERIC
+@ATTRIBUTE averageProductRating       NUMERIC
+@ATTRIBUTE productRatingOffset        NUMERIC
+@ATTRIBUTE consecutiveCaps            NUMERIC
+@ATTRIBUTE consCapsTextRatio          NUMERIC
+@ATTRIBUTE distinctWordRatio          NUMERIC
+@ATTRIBUTE averageWordLength          NUMERIC
+@ATTRIBUTE numberOfLineBreaks         NUMERIC
+@ATTRIBUTE numberOfQuestionMarks      NUMERIC
+@ATTRIBUTE numberOfExclMarks          NUMERIC
+@ATTRIBUTE lineBreakTextRatio         NUMERIC
+@ATTRIBUTE punctuationLetterRatio     NUMERIC
+@ATTRIBUTE nlpExpert	NUMERIC
+@ATTRIBUTE nlpWaitingForMrPerfect	NUMERIC
+@ATTRIBUTE nlpNoDemands	NUMERIC
+@ATTRIBUTE nlpBeatingAroundTheBush	NUMERIC
+@ATTRIBUTE nlpRager	NUMERIC
+@ATTRIBUTE nlpEuphoric	NUMERIC
+@ATTRIBUTE nlpComplainer	NUMERIC
+@ATTRIBUTE persona                {Expert,WaitingForMrPerfect,NoDemands,BeatingAroundTheBush,Rager,Euphoric,Complainer}
 
 @DATA
-0,0,1,754,5,2,-3,0,0.7948717948717948,6.3418803418803416,4,0,0,?
-0,0,1,624,5,2,-3,0,0.7916666666666666,6.3125,6,0,0,?
+0,0,1,128,5,1,1,?,?,0,0.0,0.9,6.4,0,0,0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,?
+0,0,1,166,5,5,5,?,?,0,0.0,0.9615384615384616,6.384615384615385,0,0,0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,?
+0,0,1,27,3,1,3,?,?,0,0.0,1.0,5.4,0,0,0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,?
+0,0,1,37,3,1,3,?,?,0,0.0,1.0,6.166666666666667,0,0,0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,?
+0,0,1,18,5,3,3,?,?,0,0.0,1.0,6.0,0,0,0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,?
+0,0,1,28,5,3,3,?,?,0,0.0,1.0,5.6,0,0,0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,?
+0,0,1,59,4,4,5,?,?,0,0.0,1.0,5.9,0,0,0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,?
+0,0,1,14,1,3,7,?,?,0,0.0,1.0,7.0,0,0,0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,?
+0,0,1,15,5,3,3,?,?,0,0.0,1.0,3.75,0,0,0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,?
+0,0,1,204,3,5,7,?,?,0,0.0,0.9655172413793104,7.0344827586206895,0,0,0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,?
