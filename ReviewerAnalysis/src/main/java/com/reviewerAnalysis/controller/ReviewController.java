@@ -341,6 +341,7 @@ public class ReviewController {
     }
 
     // TODO: chart: 2 bars per persona showing activeness and elaborateness
+    // TODO: Crucial to keep in mind: Entity Analysis shows reviewers, not reviews! Maybe do one for reviews!
     private void analyzeReviewers() {
         List<Persona> personas = personaRepository.findAll();
         List<Reviewer> reviewers = reviewerRepository.findAll();
