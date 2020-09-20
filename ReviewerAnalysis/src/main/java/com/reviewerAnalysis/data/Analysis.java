@@ -40,6 +40,26 @@ public class Analysis {
 
     private double lastResult;
 
+    private double activeness;
+
+    private double elaborateness;
+
+    public double getActiveness() {
+        return activeness;
+    }
+
+    public void setActiveness(double activeness) {
+        this.activeness = activeness;
+    }
+
+    public double getElaborateness() {
+        return elaborateness;
+    }
+
+    public void setElaborateness(double elaborateness) {
+        this.elaborateness = elaborateness;
+    }
+
     public Long getId() {
         return id;
     }
@@ -160,7 +180,7 @@ public class Analysis {
         this.sixthResult = sixthResult;
     }
 
-    public Analysis(String first, String second, String third, String fourth, String fifth, String sixth, String last, double firstResult, double secondResult, double thirdResult, double fourthResult, double fifthResult, double sixthResult, double lastResult) {
+    public Analysis(String first, String second, String third, String fourth, String fifth, String sixth, String last, double firstResult, double secondResult, double thirdResult, double fourthResult, double fifthResult, double sixthResult, double lastResult, double activeness, double elaborateness) {
         this.first = first;
         this.second = second;
         this.third = third;
@@ -175,6 +195,8 @@ public class Analysis {
         this.firstResult= fifthResult;
         this.sixthResult = sixthResult;
         this.lastResult = lastResult;
+        this.activeness = activeness;
+        this.elaborateness = elaborateness;
     }
 
     public Analysis() {}

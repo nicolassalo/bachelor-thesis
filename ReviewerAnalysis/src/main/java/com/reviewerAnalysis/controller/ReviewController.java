@@ -382,7 +382,7 @@ public class ReviewController {
 
 
             String[] keys = (String[]) wekaResults.keySet().toArray(new String[0]);
-            Analysis analysis = new Analysis(keys[0], keys[1], keys[2], keys[3], keys[4], keys[5], keys[keys.length - 1], wekaResults.get(keys[0]), wekaResults.get(keys[1]), wekaResults.get(keys[2]), wekaResults.get(keys[3]), wekaResults.get(keys[4]), wekaResults.get(keys[5]), wekaResults.get(keys[keys.length - 1]));
+            Analysis analysis = new Analysis(keys[0], keys[1], keys[2], keys[3], keys[4], keys[5], keys[keys.length - 1], wekaResults.get(keys[0]), wekaResults.get(keys[1]), wekaResults.get(keys[2]), wekaResults.get(keys[3]), wekaResults.get(keys[4]), wekaResults.get(keys[5]), wekaResults.get(keys[keys.length - 1]), calculateActiveness(reviewer.getReviews()), calculateElaborateness(reviewer.getReviews()));
             analysisRepository.save(analysis);
 
             String winner = keys[0];
