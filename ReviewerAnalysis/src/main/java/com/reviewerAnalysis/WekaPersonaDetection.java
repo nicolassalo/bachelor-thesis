@@ -61,12 +61,17 @@ public class WekaPersonaDetection {
         }
         List<Review> reviews = reviewRepository.findByLangAndIsForTraining(lang, true);
         System.out.println("calculating accuracy for weka");
-        for (int i = 0; i < reviews.size(); i++) {
+        int split = reviews.size() / 4;
+        for (int i = 0; i < reviews.size(); i = i + split) {
 
             try {
                 String fileName = "accuracy-test-" + lang + ".arff";
                 List<Review> list = reviewRepository.findByLangAndIsForTraining(lang, true);
-                list.remove(reviews.get(i));
+                for (int j = 0; j < reviews.size(); j++) {
+                    if (j >= i && j < i + split) {
+                        list.remove(reviews.get(j));
+                    }
+                }
                 writeFile(fileName, lang, list, nlpResults);
 
                 ConverterUtils.DataSource source1 = new ConverterUtils.DataSource("accuracy-test-" + lang + ".arff");
@@ -79,7 +84,9 @@ public class WekaPersonaDetection {
 
                 fileName = "predict-accuracy-" + lang + ".arff";
                 List<Review> predictAccuracy = new LinkedList<>();
-                predictAccuracy.add(reviews.get(i));
+                for (int j = i; j < i + split; j++) {
+                    predictAccuracy.add(reviews.get(j));
+                }
                 writeFile(fileName, lang, predictAccuracy, nlpResults);
 
                 ConverterUtils.DataSource source2 = new ConverterUtils.DataSource(fileName);
@@ -100,15 +107,14 @@ public class WekaPersonaDetection {
 
 
 
-                if (personas.get(0).equals(reviews.get(i).getPersona())) {
-                    correct++;
-                    correctCounter.put(personas.get(0), correctCounter.get(personas.get(0)) + 1);
-                } else {
-                    wrongCounter.put(personas.get(0), wrongCounter.get(personas.get(0)) + 1);
-                    //System.err.println("Error! Expected " + reviews.get(i).getPersona() + ", got " + personas.get(0));
-                }
-                if (i % 10 == 0) {
-                    System.out.println(Math.round(((double) i/reviews.size()) * 100) + " %");
+                for (int j = 0; j < split; j++) {
+                    if (personas.get(j).equals(reviews.get(i + j).getPersona())) {
+                        correct++;
+                        correctCounter.put(personas.get(j), correctCounter.get(personas.get(j)) + 1);
+                    } else {
+                        wrongCounter.put(personas.get(j), wrongCounter.get(personas.get(j)) + 1);
+                        //System.err.println("Error! Expected " + reviews.get(i).getPersona() + ", got " + personas.get(0));
+                    }
                 }
             } catch (Exception e) {
                 e.printStackTrace();

@@ -336,12 +336,10 @@ public class ReviewController {
         statsRepository.deleteByLang("de");
         statsRepository.save(new Stats("de", wekaResult.getAccuracy(), nlpResult.getAccuracy(), wekaResult.getPersonaAccuracies(), nlpResult.getPersonaAccuracies()));
 
-        analyzeReviewers();
+        //analyzeReviewers();
 
     }
 
-    // TODO: chart: 2 bars per persona showing activeness and elaborateness
-    // TODO: Crucial to keep in mind: Entity Analysis shows reviewers, not reviews! Maybe do one for reviews!
     private void analyzeReviewers() {
         List<Persona> personas = personaRepository.findAll();
         List<Reviewer> reviewers = reviewerRepository.findAll();
@@ -424,9 +422,9 @@ public class ReviewController {
         classifiers.add(new RandomForest());
         classifiers.add(new BayesNet());
 
-        /*
-        classifiers.add(new NaiveBayesMultinomial()); // cannot deal with negative numbers
-        classifiers.add(new NaiveBayesMultinomialUpdateable()); // cannot deal with negative numbers
+
+        //classifiers.add(new NaiveBayesMultinomial()); // cannot deal with negative numbers or missing values
+        //classifiers.add(new NaiveBayesMultinomialUpdateable()); // cannot deal with negative numbers or missing numbers
         classifiers.add(new AttributeSelectedClassifier());
         classifiers.add(new FilteredClassifier());
         classifiers.add(new IBk());
@@ -448,7 +446,7 @@ public class ReviewController {
         classifiers.add(new LWL());
         classifiers.add(new RandomCommittee());
         classifiers.add(new RandomSubSpace());
-        */
+
         /* worst
         classifiers.add(new Stacking());
         classifiers.add(new Vote());

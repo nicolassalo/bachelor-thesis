@@ -56,14 +56,16 @@ public class NaturalLanguageProcessor {
         }
         List<Review> reviews = reviewRepository.findByLangAndIsForTraining(lang, true);
         System.out.println("calculating accuracy for nlp");
-        for (int i = 0; i < reviews.size(); i++) {
+        int split = reviews.size() / 4;
+        for (int i = 0; i < reviews.size(); i = i + split) {
             List<String> trainingData = new LinkedList<>();
-            int counter = 0;
-            for (Review review : reviews) {
-                if (review.getPersona() != null && counter != i) {
-                    trainingData.add(review.getPersona() + "\t" + editReviewText(review.getReviewText()) + "\n");
+
+            for (int j = 0; j < reviews.size(); j++) {
+                if (reviews.get(j).getPersona() != null) {
+                    if (j < i || j >= i + split) {
+                        trainingData.add(reviews.get(j).getPersona() + "\t" + editReviewText(reviews.get(j).getReviewText()) + "\n");
+                    }
                 }
-                counter++;
             }
 
             MarkableFileInputStreamFactory dataIn;
@@ -81,9 +83,6 @@ public class NaturalLanguageProcessor {
                 params.put(TrainingParameters.ITERATIONS_PARAM, Integer.toString(100));
                 params.put(TrainingParameters.CUTOFF_PARAM, Integer.toString(1));
                 params.put("PrintMessages", false);
-                if (i % 10 == 0) {
-                    System.out.println(Math.round(((double) i/reviews.size()) * 100) + " %");
-                }
                 accuracyTestModel = DocumentCategorizerME.train(lang, sampleStream, params, new DoccatFactory());
 
             } catch (IOException e) {
@@ -92,13 +91,15 @@ public class NaturalLanguageProcessor {
             }
 
             DocumentCategorizerME myCategorizer = new DocumentCategorizerME(accuracyTestModel);
-            double[] outcomes = myCategorizer.categorize(editReviewText(reviews.get(i).getReviewText()).split(" "));
-            totalPersonaAnalysis.put(reviews.get(i).getId(), myCategorizer.scoreMap((reviews.get(i).getReviewText()).split(" ")));
-            if (myCategorizer.getBestCategory(outcomes).equals(reviews.get(i).getPersona())) {
-                correct++;
-                correctCounter.put(reviews.get(i).getPersona(), correctCounter.get(reviews.get(i).getPersona()) + 1);
-            } else {
-                wrongCounter.put(reviews.get(i).getPersona(), wrongCounter.get(myCategorizer.getBestCategory(outcomes)) + 1);
+            for (int j = 0; j < split && j < reviews.size() - i; j++) {
+                double[] outcomes = myCategorizer.categorize(editReviewText(reviews.get(j + i).getReviewText()).split(" "));
+                totalPersonaAnalysis.put(reviews.get(i + j).getId(), myCategorizer.scoreMap((reviews.get(i + j).getReviewText()).split(" ")));
+                if (myCategorizer.getBestCategory(outcomes).equals(reviews.get(i + j).getPersona())) {
+                    correct++;
+                    correctCounter.put(reviews.get(i + j).getPersona(), correctCounter.get(reviews.get(i + j).getPersona()) + 1);
+                } else {
+                    wrongCounter.put(reviews.get(i + j).getPersona(), wrongCounter.get(myCategorizer.getBestCategory(outcomes)) + 1);
+                }
             }
         }
         double accuracy = (double) correct / reviews.size();
