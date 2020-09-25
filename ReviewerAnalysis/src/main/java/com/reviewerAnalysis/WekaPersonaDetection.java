@@ -61,7 +61,7 @@ public class WekaPersonaDetection {
         }
         List<Review> reviews = reviewRepository.findByLangAndIsForTraining(lang, true);
         System.out.println("calculating accuracy for weka");
-        int split = reviews.size() / 5;
+        int split = reviews.size() / 4;
         for (int i = 0; i < reviews.size(); i = i + split) {
 
             try {

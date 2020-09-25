@@ -5,6 +5,11 @@ import com.SentimentAnalysis.data.Review;
 import com.SentimentAnalysis.data.ReviewRepository;
 import opennlp.tools.cmdline.doccat.DoccatFineGrainedReportListener;
 import opennlp.tools.doccat.*;
+import opennlp.tools.ml.AbstractTrainer;
+import opennlp.tools.ml.maxent.GISTrainer;
+import opennlp.tools.ml.maxent.quasinewton.QNTrainer;
+import opennlp.tools.ml.naivebayes.NaiveBayesTrainer;
+import opennlp.tools.ml.perceptron.PerceptronTrainer;
 import opennlp.tools.util.MarkableFileInputStreamFactory;
 import opennlp.tools.util.ObjectStream;
 import opennlp.tools.util.PlainTextByLineStream;
@@ -86,11 +91,11 @@ public class SentimentAnalysis {
             List<String> trainingData = new LinkedList<>();
 
             for (int j = 0; j < reviews.size(); j++) {
-                    if (j < i || j >= i + split) {
-                        trainingData.add(reviews.get(j).getRating() + "\t" + reviews.get(j).getReviewText() + "\n");
-                    } else {
-                        counter++;
-                    }
+                if (j < i || j >= i + split) {
+                    trainingData.add(reviews.get(j).getRating() + "\t" + reviews.get(j).getReviewText() + "\n");
+                } else {
+                    counter++;
+                }
             }
 
             MarkableFileInputStreamFactory dataIn;
@@ -105,9 +110,14 @@ public class SentimentAnalysis {
                 ObjectStream lineStream = new PlainTextByLineStream(dataIn, "UTF-8");
                 ObjectStream sampleStream = new DocumentSampleStream(lineStream);
                 TrainingParameters params = TrainingParameters.defaultParams();
+                for (String str : params.getSettings().keySet()) {
+                    System.out.println(str + ": " + params.getSettings().get(str));
+                }
                 params.put(TrainingParameters.ITERATIONS_PARAM, Integer.toString(100));
                 params.put(TrainingParameters.CUTOFF_PARAM, Integer.toString(1));
+                params.put(AbstractTrainer.ALGORITHM_PARAM, QNTrainer.MAXENT_QN_VALUE);
                 params.put("PrintMessages", false);
+
                 accuracyTestModel = DocumentCategorizerME.train(lang, sampleStream, params, new DoccatFactory());
 
             } catch (IOException e) {
@@ -117,16 +127,12 @@ public class SentimentAnalysis {
             DocumentCategorizerME myCategorizer = new DocumentCategorizerME(accuracyTestModel);
             for (int j = 0; j < split && j < reviews.size() - i; j++) {
                 double[] outcomes = myCategorizer.categorize(reviews.get(j + i).getReviewText().split(" "));
-                if (myCategorizer.getBestCategory(outcomes).equals(reviews.get(i + j).getRating() + "")) {
+                if (myCategorizer.getBestCategory(outcomes).equals(reviews.get(i + j).getRating() + "") /* || myCategorizer.getBestCategory(outcomes).equals((reviews.get(i + j).getRating() + 1) + "") || myCategorizer.getBestCategory(outcomes).equals((reviews.get(i + j).getRating() - 1) + "")*/) {
                     correct++;
-                    int counterBefore = correctCounter.get(reviews.get(i + j).getRating());
                     correctCounter.put(reviews.get(i + j).getRating(), correctCounter.get(reviews.get(i + j).getRating()) + 1);
-                    System.out.println("Correct: " + counterBefore + ", " + correctCounter.get(reviews.get(i + j).getRating()));
                 } else {
                     wrong++;
-                    int counterBefore = wrongCounter.get(reviews.get(i + j).getRating());
                     wrongCounter.put(reviews.get(i + j).getRating(), wrongCounter.get(reviews.get(i + j).getRating()) + 1);
-                    System.out.println(counterBefore + ", " + wrongCounter.get(reviews.get(i + j).getRating()));
                 }
             }
         }
