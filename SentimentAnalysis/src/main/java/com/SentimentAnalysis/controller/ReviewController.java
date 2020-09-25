@@ -31,6 +31,9 @@ public class ReviewController {
     @Autowired
     PasswordRepository passwordRepository;
 
+    @Autowired
+    SentimentAnalysis sentimentAnalysis;
+
     /**
      * Saves the sent review in the collection
      *
@@ -79,7 +82,6 @@ public class ReviewController {
         }
     }
 
-    // TODO: Use @RequestBody instead of @RequestParam. Throws error if URL is too long
     @PostMapping("/reviews/calcRating")
     public ResponseEntity<?> calcRating(@Valid @RequestBody TextModel text) {
         Language language = getLanguage(text.getText());
@@ -87,7 +89,7 @@ public class ReviewController {
             if (language.getConfidence() < 0.95) {
                 return new ResponseEntity<>(new ResponseMessage("Not sure that this is really german. Only" + " with a confidence of " + Math.round(language.getConfidence() * 100) + " %."), HttpStatus.BAD_REQUEST);
             }
-            int rating = SentimentAnalysis.getInstance().classifyNewReview(editReviewText(text.getText()));
+            int rating = sentimentAnalysis.classifyNewReview(editReviewText(text.getText()));
             return new ResponseEntity<>(new TextRating(rating, language.getConfidence()), HttpStatus.OK);
         }
         return new ResponseEntity<>(new ResponseMessage("Language currently not supported. Language found: " + language.getLang() + " with a confidence of " + Math.round(language.getConfidence() * 100) + " %."), HttpStatus.BAD_REQUEST);
@@ -106,7 +108,7 @@ public class ReviewController {
         return languages[0];
     }
 
-    private String editReviewText(String text) {
+    public static String editReviewText(String text) {
         return text
                 .replaceAll("\\„", " „ ")
                 .replaceAll("\\“", " “" )
@@ -120,6 +122,7 @@ public class ReviewController {
     @EventListener(ApplicationReadyEvent.class)
     public void initialize() {
         trainSentimentModel();
+        sentimentAnalysis.calcAccuracy("de");
     }
 
     private void trainSentimentModel() {
@@ -129,6 +132,6 @@ public class ReviewController {
             trainingData.add(review.getRating() + "\t" + review.getReviewText() + "\n");
         }
 
-        SentimentAnalysis.getInstance().trainModel("de", trainingData);
+        sentimentAnalysis.trainModel("de", trainingData);
     }
 }

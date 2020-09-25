@@ -325,7 +325,7 @@ public class ReviewController {
         naturalLanguageProcessor.train("de");
         Result nlpResult = naturalLanguageProcessor.calcAccuracy("de");
 
-        //compareAlgorithms(nlpResult.getTotalPersonaAnalysis());
+        compareAlgorithms(nlpResult.getTotalPersonaAnalysis());
         //updateReviewSentiment();
 
         wekaPersonaDetection.train("de", nlpResult.getTotalPersonaAnalysis());

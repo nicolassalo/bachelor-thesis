@@ -46,6 +46,7 @@ public class NaturalLanguageProcessor {
     public ReviewController.Result calcAccuracy(String lang) {
         isCalculating = true;
         long start = System.currentTimeMillis();
+
         int correct = 0;
         Map<Long, Map<String, Double>> totalPersonaAnalysis = new HashMap<>();
         Map<String, Integer> correctCounter = new HashMap<>();
@@ -56,7 +57,7 @@ public class NaturalLanguageProcessor {
         }
         List<Review> reviews = reviewRepository.findByLangAndIsForTraining(lang, true);
         System.out.println("calculating accuracy for nlp");
-        int split = reviews.size() / 4;
+        int split = reviews.size() / 5;
         for (int i = 0; i < reviews.size(); i = i + split) {
             List<String> trainingData = new LinkedList<>();
 
