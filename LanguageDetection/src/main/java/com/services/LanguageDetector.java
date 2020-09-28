@@ -1,6 +1,8 @@
 package com.services;
 
 import opennlp.tools.langdetect.*;
+import opennlp.tools.ml.AbstractTrainer;
+import opennlp.tools.ml.maxent.quasinewton.QNTrainer;
 import opennlp.tools.util.*;
 
 import java.io.File;
@@ -39,7 +41,7 @@ public class LanguageDetector {
             params.put(TrainingParameters.ITERATIONS_PARAM, 100);
             params.put(TrainingParameters.CUTOFF_PARAM, 5);
             params.put("DataIndexer", "TwoPass");
-            params.put(TrainingParameters.ALGORITHM_PARAM, "NAIVEBAYES");
+            params.put(AbstractTrainer.ALGORITHM_PARAM, QNTrainer.MAXENT_QN_VALUE);
 
             LanguageDetectorModel model = LanguageDetectorME
                     .train(sampleStream, params, new LanguageDetectorFactory());

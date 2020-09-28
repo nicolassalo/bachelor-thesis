@@ -1,4 +1,4 @@
-package com.reviewerAnalysis;
+package com.reviewerAnalysis.services;
 
 import com.reviewerAnalysis.controller.ReviewController;
 import com.reviewerAnalysis.data.Persona;

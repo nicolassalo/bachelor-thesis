@@ -1,4 +1,4 @@
-package com.reviewerAnalysis;
+package com.reviewerAnalysis.services;
 
 import com.reviewerAnalysis.controller.ReviewController;
 import com.reviewerAnalysis.data.Persona;
@@ -6,6 +6,7 @@ import com.reviewerAnalysis.data.PersonaRepository;
 import com.reviewerAnalysis.data.Review;
 import com.reviewerAnalysis.data.ReviewRepository;
 import opennlp.tools.doccat.*;
+import opennlp.tools.ml.AbstractTrainer;
 import opennlp.tools.ml.maxent.GISTrainer;
 import opennlp.tools.ml.maxent.quasinewton.QNTrainer;
 import opennlp.tools.ml.naivebayes.NaiveBayesEvalParameters;
@@ -82,6 +83,7 @@ public class NaturalLanguageProcessor {
                 TrainingParameters params = TrainingParameters.defaultParams();
                 params.put(TrainingParameters.ITERATIONS_PARAM, Integer.toString(100));
                 params.put(TrainingParameters.CUTOFF_PARAM, Integer.toString(1));
+                params.put(AbstractTrainer.ALGORITHM_PARAM, QNTrainer.MAXENT_QN_VALUE);
                 params.put("PrintMessages", false);
                 accuracyTestModel = DocumentCategorizerME.train(lang, sampleStream, params, new DoccatFactory());
 

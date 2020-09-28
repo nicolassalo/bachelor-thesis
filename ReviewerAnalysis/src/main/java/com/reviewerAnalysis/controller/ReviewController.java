@@ -1,7 +1,7 @@
 package com.reviewerAnalysis.controller;
 
-import com.reviewerAnalysis.NaturalLanguageProcessor;
-import com.reviewerAnalysis.WekaPersonaDetection;
+import com.reviewerAnalysis.services.NaturalLanguageProcessor;
+import com.reviewerAnalysis.services.WekaPersonaDetection;
 import com.reviewerAnalysis.data.*;
 import com.reviewerAnalysis.model.*;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -13,8 +13,6 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.client.RestTemplate;
 import weka.classifiers.Classifier;
 import weka.classifiers.bayes.BayesNet;
-import weka.classifiers.bayes.NaiveBayesMultinomial;
-import weka.classifiers.bayes.NaiveBayesMultinomialUpdateable;
 import weka.classifiers.bayes.net.BIFReader;
 import weka.classifiers.bayes.net.BayesNetGenerator;
 import weka.classifiers.bayes.net.EditableBayesNet;
@@ -25,14 +23,12 @@ import weka.classifiers.lazy.LWL;
 import weka.classifiers.meta.*;
 import weka.classifiers.rules.*;
 import weka.classifiers.trees.*;
-import weka.classifiers.trees.lmt.LogisticBase;
 
 import javax.transaction.Transactional;
 import javax.validation.Valid;
 import java.io.BufferedWriter;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.sql.SQLOutput;
 import java.util.*;
 import java.util.stream.Collectors;
 
