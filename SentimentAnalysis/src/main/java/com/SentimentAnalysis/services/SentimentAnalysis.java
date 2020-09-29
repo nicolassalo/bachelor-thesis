@@ -1,15 +1,10 @@
-package com.SentimentAnalysis;
+package com.SentimentAnalysis.services;
 
-import com.SentimentAnalysis.controller.ReviewController;
 import com.SentimentAnalysis.data.Review;
 import com.SentimentAnalysis.data.ReviewRepository;
-import opennlp.tools.cmdline.doccat.DoccatFineGrainedReportListener;
 import opennlp.tools.doccat.*;
 import opennlp.tools.ml.AbstractTrainer;
-import opennlp.tools.ml.maxent.GISTrainer;
 import opennlp.tools.ml.maxent.quasinewton.QNTrainer;
-import opennlp.tools.ml.naivebayes.NaiveBayesTrainer;
-import opennlp.tools.ml.perceptron.PerceptronTrainer;
 import opennlp.tools.util.MarkableFileInputStreamFactory;
 import opennlp.tools.util.ObjectStream;
 import opennlp.tools.util.PlainTextByLineStream;

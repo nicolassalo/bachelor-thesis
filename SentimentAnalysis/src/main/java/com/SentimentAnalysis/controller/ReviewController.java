@@ -1,6 +1,6 @@
 package com.SentimentAnalysis.controller;
 
-import com.SentimentAnalysis.SentimentAnalysis;
+import com.SentimentAnalysis.services.SentimentAnalysis;
 import com.SentimentAnalysis.data.PasswordRepository;
 import com.SentimentAnalysis.data.Review;
 import com.SentimentAnalysis.data.ReviewRepository;
