@@ -5,14 +5,11 @@ import com.reviewerAnalysis.data.Persona;
 import com.reviewerAnalysis.data.PersonaRepository;
 import com.reviewerAnalysis.data.Review;
 import com.reviewerAnalysis.data.ReviewRepository;
-import opennlp.tools.ml.perceptron.PerceptronTrainer;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 import weka.classifiers.Classifier;
-import weka.classifiers.functions.SimpleLogistic;
 import weka.classifiers.meta.ClassificationViaRegression;
-import weka.classifiers.rules.DecisionTable;
 import weka.core.Instances;
 import weka.core.converters.ConverterUtils;
 
@@ -181,8 +178,8 @@ public class WekaPersonaDetection {
                 System.out.println(persona);
                 double[] percentages = classifier.distributionForInstance(prediction.instance(i));
                 for (int j = 0; j < percentages.length; j++) {
-                    double value = i == 0 ? percentages[j] : percentages[j] + result.get(accuracyTrain.classAttribute().value(j));
-                    result.put(accuracyTrain.classAttribute().value(j), value);
+                    double value = i == 0 ? percentages[j] : percentages[j] + result.get(train.classAttribute().value(j));
+                    result.put(train.classAttribute().value(j), value);
                 }
             }
 
