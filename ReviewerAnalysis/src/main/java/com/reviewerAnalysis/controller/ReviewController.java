@@ -327,12 +327,13 @@ public class ReviewController {
         wekaPersonaDetection.train("de", nlpResult.getTotalPersonaAnalysis());
 
 
+        /*
         Result wekaResult = wekaPersonaDetection.calcAccuracy("de", null, nlpResult.getTotalPersonaAnalysis());
         System.out.println(wekaResult.getAccuracy() + ", " + wekaResult.getTime());
         statsRepository.deleteByLang("de");
         statsRepository.save(new Stats("de", wekaResult.getAccuracy(), nlpResult.getAccuracy(), wekaResult.getPersonaAccuracies(), nlpResult.getPersonaAccuracies()));
-
-        //analyzeReviewers();
+        analyzeReviewers();
+         */
 
     }
 
